@@ -4,6 +4,9 @@
 // ============================================================
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { Button } from "@/components/ui/button";
 import {
   FloorPlan,
   loadPlans,
@@ -24,6 +27,7 @@ import FloorPlanCanvas from "@/components/FloorPlanCanvas";
 import LeftPanel from "@/components/LeftPanel";
 import TopToolbar from "@/components/TopToolbar";
 import CustomFurnitureDialog from "@/components/CustomFurnitureDialog";
+import { trpc } from "@/lib/trpc";
 
 function createEmptyPlan(name: string = "New Plan"): FloorPlan {
   return {
@@ -39,6 +43,8 @@ function createEmptyPlan(name: string = "New Plan"): FloorPlan {
 }
 
 export default function Home() {
+  const { user, loading, isAuthenticated } = useAuth();
+
   const [plans, setPlans] = useState<FloorPlan[]>([]);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [customFurniture, setCustomFurniture] = useState<FurnitureTemplate[]>([]);
@@ -48,43 +54,98 @@ export default function Home() {
   const [showCustomDialog, setShowCustomDialog] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
-  // Load persisted data on mount
+  // Load user's floor plans from database
+  const { data: dbPlans = [] } = trpc.floorPlans.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
+  // Load user's custom furniture from database
+  const { data: dbCustomFurniture = [] } = trpc.customFurniture.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
+  // Sync database floor plans to local state
   useEffect(() => {
-    const savedPlans = loadPlans();
-    const savedCustom = loadCustomFurniture();
-    const savedActiveId = loadActivePlanId();
-    const savedFavorites = loadFavorites();
-
-    setCustomFurniture(savedCustom);
-    setFavorites(savedFavorites);
-
-    if (savedPlans.length > 0) {
-      setPlans(savedPlans);
-      const activeExists = savedPlans.find((p) => p.id === savedActiveId);
-      setActivePlanId(activeExists ? savedActiveId : savedPlans[0].id);
-    } else {
-      const initial = createEmptyPlan("My Floor Plan");
-      setPlans([initial]);
-      setActivePlanId(initial.id);
+    if (dbPlans.length > 0) {
+      const convertedPlans: FloorPlan[] = dbPlans.map((dbPlan) => ({
+        id: dbPlan.id,
+        name: dbPlan.name,
+        totalWidth: dbPlan.totalWidth,
+        totalHeight: dbPlan.totalHeight,
+        rooms: JSON.parse(dbPlan.roomsJson || "[]"),
+        furniture: JSON.parse(dbPlan.furnitureJson || "[]"),
+        createdAt: new Date(dbPlan.createdAt).getTime(),
+        updatedAt: new Date(dbPlan.updatedAt).getTime(),
+      }));
+      setPlans(convertedPlans);
+      const savedActiveId = loadActivePlanId();
+      const activeExists = convertedPlans.find((p) => p.id === savedActiveId);
+      setActivePlanId(activeExists ? savedActiveId : convertedPlans[0].id);
     }
+  }, [dbPlans]);
+
+  // Sync database custom furniture to local state
+  useEffect(() => {
+    if (dbCustomFurniture.length > 0) {
+      const converted: FurnitureTemplate[] = dbCustomFurniture.map((item) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category as any,
+        widthFt: item.width / 12, // Convert inches to feet
+        depthFt: item.depth / 12,
+        color: item.color,
+        isCustom: true,
+      }));
+      setCustomFurniture(converted);
+    }
+  }, [dbCustomFurniture]);
+
+  // Load local favorites
+  useEffect(() => {
+    const savedFavorites = loadFavorites();
+    setFavorites(savedFavorites);
   }, []);
 
-  // Persist plans whenever they change
+  // Persist plans to database when they change
+  const saveFloorPlanMutation = trpc.floorPlans.save.useMutation();
   useEffect(() => {
-    if (plans.length > 0) {
-      savePlans(plans);
+    if (plans.length > 0 && isAuthenticated) {
+      plans.forEach((plan) => {
+        saveFloorPlanMutation.mutate({
+          id: plan.id,
+          name: plan.name,
+          totalWidth: plan.totalWidth,
+          totalHeight: plan.totalHeight,
+          roomsJson: JSON.stringify(plan.rooms),
+          furnitureJson: JSON.stringify(plan.furniture),
+        });
+      });
     }
-  }, [plans]);
+  }, [plans, isAuthenticated]);
+
+  // Persist custom furniture to database
+  const saveCustomFurnitureMutation = trpc.customFurniture.save.useMutation();
+  useEffect(() => {
+    if (customFurniture.length > 0 && isAuthenticated) {
+      customFurniture.forEach((item) => {
+        if (item.isCustom) {
+          saveCustomFurnitureMutation.mutate({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            width: Math.round(item.widthFt * 12), // Convert feet to inches
+            depth: Math.round(item.depthFt * 12),
+            color: item.color,
+          });
+        }
+      });
+    }
+  }, [customFurniture, isAuthenticated]);
 
   // Persist active plan id
   useEffect(() => {
     saveActivePlanId(activePlanId);
   }, [activePlanId]);
-
-  // Persist custom furniture
-  useEffect(() => {
-    saveCustomFurniture(customFurniture);
-  }, [customFurniture]);
 
   // Persist favorites
   useEffect(() => {
@@ -154,6 +215,67 @@ export default function Home() {
   }, []);
 
   const allFurniture = [...DEFAULT_FURNITURE, ...customFurniture];
+
+  // Show login screen if not authenticated
+  if (loading) {
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--bp-navy)",
+        }}
+      >
+        <div style={{ textAlign: "center", color: "var(--bp-text-primary)" }}>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--bp-navy)",
+          gap: "2rem",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <h1 style={{ color: "var(--bp-cyan)", fontSize: "2.5rem", marginBottom: "0.5rem" }}>
+            SPACE PLANNER STUDIO
+          </h1>
+          <p style={{ color: "var(--bp-text-secondary)", fontSize: "1.1rem" }}>
+            Blueprint Mode - Interactive 2D Floor Planning
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            window.location.href = getLoginUrl();
+          }}
+          style={{
+            padding: "0.75rem 2rem",
+            fontSize: "1rem",
+            backgroundColor: "var(--bp-cyan)",
+            color: "var(--bp-navy)",
+            border: "1px solid var(--bp-cyan)",
+            cursor: "pointer",
+          }}
+        >
+          Login to Continue
+        </Button>
+      </div>
+    );
+  }
 
   if (!activePlan) return null;
 
