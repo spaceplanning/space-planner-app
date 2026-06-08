@@ -14,9 +14,11 @@ import {
   Maximize2,
   Settings,
   Download,
+  Share2,
 } from "lucide-react";
 import { FloorPlan, formatFeetInches, parseFeetInches, generateId } from "@/lib/floorPlanTypes";
 import ExportDialog from "./ExportDialog";
+import ShareDialog from "./ShareDialog";
 import { toast } from "sonner";
 
 interface Props {
@@ -46,6 +48,7 @@ export default function TopToolbar({
   const [showRoomMenu, setShowRoomMenu] = useState(false);
   const [showDimensions, setShowDimensions] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [editWidth, setEditWidth] = useState("");
   const [editHeight, setEditHeight] = useState("");
   const [editName, setEditName] = useState("");
@@ -372,6 +375,36 @@ export default function TopToolbar({
           </div>
         )}
 
+        {/* Share button */}
+        <button
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            background: "transparent",
+            border: "1px solid var(--bp-grid-major)",
+            borderRadius: 4,
+            cursor: "pointer",
+            color: "var(--bp-text-secondary)",
+            fontFamily: "'Space Mono', monospace",
+            fontSize: 10,
+            transition: "all 150ms ease-out",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--bp-cyan)";
+            e.currentTarget.style.color = "var(--bp-cyan)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--bp-grid-major)";
+            e.currentTarget.style.color = "var(--bp-text-secondary)";
+          }}
+          onClick={() => { setShowShare(true); closeAllMenus(); }}
+        >
+          <Share2 size={12} />
+          SHARE
+        </button>
+
         {/* Close menus on outside click */}
         {(showPlansMenu || showRoomMenu || showDimensions || showExport) && (
           <div
@@ -387,6 +420,15 @@ export default function TopToolbar({
           plan={plan}
           canvasElement={canvasElement}
           onClose={() => setShowExport(false)}
+        />
+      )}
+
+      {/* Share dialog */}
+      {showShare && (
+        <ShareDialog
+          floorPlanId={plan.id}
+          floorPlanName={plan.name}
+          onClose={() => setShowShare(false)}
         />
       )}
     </>

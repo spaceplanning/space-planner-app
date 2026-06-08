@@ -61,3 +61,22 @@ export const customFurniture = mysqlTable("customFurniture", {
 
 export type CustomFurniture = typeof customFurniture.$inferSelect;
 export type InsertCustomFurniture = typeof customFurniture.$inferInsert;
+
+
+/**
+ * Floor plan shares table — stores sharing permissions and tokens
+ */
+export const floorPlanShares = mysqlTable("floorPlanShares", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  floorPlanId: varchar("floorPlanId", { length: 64 }).notNull(),
+  ownerId: int("ownerId").notNull(),
+  sharedWithUserId: int("sharedWithUserId"), // null if public link
+  shareToken: varchar("shareToken", { length: 64 }).notNull().unique(),
+  permission: mysqlEnum("permission", ["view", "edit"]).default("view").notNull(),
+  expiresAt: timestamp("expiresAt"), // null if no expiration
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FloorPlanShare = typeof floorPlanShares.$inferSelect;
+export type InsertFloorPlanShare = typeof floorPlanShares.$inferInsert;

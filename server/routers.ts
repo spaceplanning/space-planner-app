@@ -92,6 +92,50 @@ export const appRouter = router({
         db.deleteCustomFurniture(input.id, ctx.user.id)
       ),
   }),
+
+  // Floor Plan Sharing procedures
+  sharing: router({
+    createShare: protectedProcedure
+      .input(z.object({
+        floorPlanId: z.string(),
+        permission: z.enum(["view", "edit"]),
+        expiresInDays: z.number().optional(),
+      }))
+      .mutation(({ ctx, input }) => {
+        const shareToken = nanoid(32);
+        const expiresAt = input.expiresInDays
+          ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
+          : undefined;
+        
+        return db.createShare({
+          id: nanoid(),
+          floorPlanId: input.floorPlanId,
+          ownerId: ctx.user.id,
+          sharedWithUserId: undefined,
+          shareToken,
+          permission: input.permission,
+          expiresAt,
+        });
+      }),
+
+    getShares: protectedProcedure
+      .input(z.object({ floorPlanId: z.string() }))
+      .query(({ ctx, input }) =>
+        db.getFloorPlanShares(input.floorPlanId, ctx.user.id)
+      ),
+
+    deleteShare: protectedProcedure
+      .input(z.object({ shareId: z.string() }))
+      .mutation(({ ctx, input }) =>
+        db.deleteShare(input.shareId, ctx.user.id)
+      ),
+
+    getByToken: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .query(({ input }) =>
+        db.getShareByToken(input.token)
+      ),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

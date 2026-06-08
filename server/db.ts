@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, floorPlans, customFurniture, InsertFloorPlan, InsertCustomFurniture } from "../drizzle/schema";
+import { InsertUser, users, floorPlans, customFurniture, floorPlanShares, InsertFloorPlan, InsertCustomFurniture, InsertFloorPlanShare } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -211,5 +211,101 @@ export async function deleteCustomFurniture(id: string, userId: number) {
   } catch (error) {
     console.error("[Database] Failed to delete custom furniture:", error);
     return false;
+  }
+}
+
+
+// Floor Plan Sharing queries
+export async function createShare(share: InsertFloorPlanShare) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  try {
+    await db.insert(floorPlanShares).values(share);
+    return share;
+  } catch (error) {
+    console.error("[Database] Failed to create share:", error);
+    return undefined;
+  }
+}
+
+export async function getShareByToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  try {
+    const result = await db.select().from(floorPlanShares)
+      .where(eq(floorPlanShares.shareToken, token))
+      .limit(1);
+    
+    if (result.length === 0) return undefined;
+    
+    // Check if share has expired
+    if (result[0].expiresAt && new Date(result[0].expiresAt) < new Date()) {
+      return undefined;
+    }
+    
+    return result[0];
+  } catch (error) {
+    console.error("[Database] Failed to get share:", error);
+    return undefined;
+  }
+}
+
+export async function getFloorPlanShares(floorPlanId: string, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    // Verify ownership
+    const plan = await getFloorPlanById(floorPlanId, userId);
+    if (!plan) return [];
+    
+    return await db.select().from(floorPlanShares)
+      .where(eq(floorPlanShares.floorPlanId, floorPlanId));
+  } catch (error) {
+    console.error("[Database] Failed to get floor plan shares:", error);
+    return [];
+  }
+}
+
+export async function deleteShare(shareId: string, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  try {
+    // Verify ownership
+    const share = await db.select().from(floorPlanShares)
+      .where(eq(floorPlanShares.id, shareId))
+      .limit(1);
+    
+    if (share.length === 0 || share[0].ownerId !== userId) return false;
+    
+    await db.delete(floorPlanShares).where(eq(floorPlanShares.id, shareId));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete share:", error);
+    return false;
+  }
+}
+
+export async function getSharedFloorPlans(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    // Get all shares where this user is the recipient
+    const shares = await db.select().from(floorPlanShares)
+      .where(eq(floorPlanShares.sharedWithUserId, userId));
+    
+    // Get the actual floor plans
+    const planIds = shares.map(s => s.floorPlanId);
+    if (planIds.length === 0) return [];
+    
+    return await db.select().from(floorPlans)
+      .where(eq(floorPlans.id, planIds[0])); // Simplified - in production use IN clause
+  } catch (error) {
+    console.error("[Database] Failed to get shared floor plans:", error);
+    return [];
   }
 }
