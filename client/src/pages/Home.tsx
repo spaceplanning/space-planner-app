@@ -3,7 +3,7 @@
 // Blueprint Dark Theme: full-screen layout with left panel + canvas
 // ============================================================
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   FloorPlan,
   loadPlans,
@@ -43,6 +43,7 @@ export default function Home() {
   const [focusedRoomId, setFocusedRoomId] = useState<string | null>(null);
   const [draggedFurniture, setDraggedFurniture] = useState<FurnitureTemplate | null>(null);
   const [showCustomDialog, setShowCustomDialog] = useState(false);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Load persisted data on mount
   useEffect(() => {
@@ -159,6 +160,7 @@ export default function Home() {
         onNewPlan={handleNewPlan}
         onDeletePlan={handleDeletePlan}
         onFocusRoom={handleFocusRoom}
+        canvasElement={canvasContainerRef.current}
       />
 
       {/* Main content */}
@@ -176,7 +178,7 @@ export default function Home() {
         />
 
         {/* Canvas */}
-        <div style={{ flex: 1, overflow: "hidden" }}>
+        <div ref={canvasContainerRef} style={{ flex: 1, overflow: "hidden" }}>
           <FloorPlanCanvas
             plan={activePlan}
             focusedRoomId={focusedRoomId}
