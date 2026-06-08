@@ -20,8 +20,9 @@ import {
   generateId,
 } from "@/lib/floorPlanTypes";
 import { FurnitureTemplate, CATEGORY_COLORS } from "@/lib/furnitureData";
-import { RotateCw, Trash2, Move, Edit3 } from "lucide-react";
+import { RotateCw, Trash2, Move, Edit3, Ruler } from "lucide-react";
 import RoomEditorDialog from "./RoomEditorDialog";
+import MeasurementPanel from "./MeasurementPanel";
 
 const GRID_FT = 1;
 const MIN_SCALE = 8;
@@ -51,6 +52,11 @@ interface DrawState {
   currentY: number;
 }
 
+interface MeasurementPoint {
+  x: number;
+  y: number;
+}
+
 export default function FloorPlanCanvas({
   plan,
   focusedRoomId,
@@ -70,6 +76,8 @@ export default function FloorPlanCanvas({
   const [dropPreview, setDropPreview] = useState<{ x: number; y: number } | null>(null);
   const [drawMode, setDrawMode] = useState(false);
   const [drawState, setDrawState] = useState<DrawState | null>(null);
+  const [measureMode, setMeasureMode] = useState(false);
+  const [measurePoints, setMeasurePoints] = useState<MeasurementPoint[]>([]);
 
   const focusedRoom = useMemo(
     () => (focusedRoomId ? plan.rooms.find((r) => r.id === focusedRoomId) : null),
@@ -131,12 +139,17 @@ export default function FloorPlanCanvas({
         setPanStart({ x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y });
         return;
       }
+      if (measureMode && e.button === 0) {
+        const { xFt, yFt } = getCanvasPos(e);
+        setMeasurePoints((prev) => [...prev, { x: xFt, y: yFt }]);
+        return;
+      }
       if (drawMode && e.button === 0) {
         const { xFt, yFt } = getCanvasPos(e);
         setDrawState({ startX: xFt, startY: yFt, currentX: xFt, currentY: yFt });
       }
     },
-    [offset, drawMode, getCanvasPos]
+    [offset, drawMode, measureMode, getCanvasPos]
   );
 
   const handleMouseMove = useCallback(
@@ -246,6 +259,19 @@ export default function FloorPlanCanvas({
     setDropPreview(null);
     if (drawState) setDrawState(null);
   }, [drawState]);
+
+  const handleMeasureClear = useCallback(() => {
+    setMeasurePoints([]);
+  }, []);
+
+  const handleMeasureUndo = useCallback(() => {
+    setMeasurePoints((prev) => prev.slice(0, -1));
+  }, []);
+
+  const handleMeasureClose = useCallback(() => {
+    setMeasureMode(false);
+    setMeasurePoints([]);
+  }, []);
 
   const startFurnitureDrag = useCallback(
     (e: React.MouseEvent, item: PlacedFurniture) => {
@@ -550,7 +576,9 @@ export default function FloorPlanCanvas({
         onMouseLeave={handleMouseLeave}
         onClick={() => { setSelectedFurnitureId(null); }}
         style={{
-          cursor: drawMode
+          cursor: measureMode
+            ? "crosshair"
+            : drawMode
             ? "crosshair"
             : draggedFurniture
             ? "copy"
@@ -601,7 +629,7 @@ export default function FloorPlanCanvas({
         </div>
       </div>
 
-      {/* Draw mode toggle */}
+      {/* Draw mode and measurement toggles */}
       <div
         style={{
           position: "absolute",
@@ -616,11 +644,26 @@ export default function FloorPlanCanvas({
           style={{
             padding: "5px 10px",
             fontSize: 10,
+            borderColor: measureMode ? "var(--bp-dim-yellow)" : "var(--bp-grid-major)",
+            color: measureMode ? "var(--bp-dim-yellow)" : "var(--bp-text-muted)",
+            background: measureMode ? "rgba(250,204,21,0.08)" : "var(--bp-panel)",
+          }}
+          onClick={() => { setMeasureMode(!measureMode); setDrawMode(false); }}
+          title="Measurement Tool: click points to measure distance or area"
+        >
+          <Ruler size={10} style={{ display: "inline", marginRight: 4 }} />
+          {measureMode ? "MEASURING..." : "MEASURE"}
+        </button>
+        <button
+          className="bp-btn"
+          style={{
+            padding: "5px 10px",
+            fontSize: 10,
             borderColor: drawMode ? "var(--bp-cyan)" : "var(--bp-grid-major)",
             color: drawMode ? "var(--bp-cyan)" : "var(--bp-text-muted)",
             background: drawMode ? "rgba(34,211,238,0.08)" : "var(--bp-panel)",
           }}
-          onClick={() => setDrawMode(!drawMode)}
+          onClick={() => { setDrawMode(!drawMode); setMeasureMode(false); }}
           title="Draw Room Mode: click and drag to draw a new room"
         >
           <Edit3 size={10} style={{ display: "inline", marginRight: 4 }} />
@@ -782,6 +825,90 @@ export default function FloorPlanCanvas({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Measurement visualization */}
+      {measureMode && measurePoints.length > 0 && (
+        <svg
+          style={{ position: "absolute", top: offset.y, left: offset.x, overflow: "visible", pointerEvents: "none" }}
+          width={feetToPx(plan.totalWidth || 100, scale) + 100}
+          height={feetToPx(plan.totalHeight || 100, scale) + 100}
+        >
+          {/* Lines between points */}
+          {measurePoints.length > 1 && (
+            <g>
+              {measurePoints.map((p, i) => {
+                if (i === measurePoints.length - 1) return null;
+                const nextP = measurePoints[i + 1];
+                return (
+                  <line
+                    key={`line-${i}`}
+                    x1={feetToPx(p.x, scale)}
+                    y1={feetToPx(p.y, scale)}
+                    x2={feetToPx(nextP.x, scale)}
+                    y2={feetToPx(nextP.y, scale)}
+                    stroke="#facc15"
+                    strokeWidth={2}
+                    strokeDasharray="4 2"
+                  />
+                );
+              })}
+              {/* Close polygon if 3+ points */}
+              {measurePoints.length >= 3 && (
+                <line
+                  x1={feetToPx(measurePoints[measurePoints.length - 1].x, scale)}
+                  y1={feetToPx(measurePoints[measurePoints.length - 1].y, scale)}
+                  x2={feetToPx(measurePoints[0].x, scale)}
+                  y2={feetToPx(measurePoints[0].y, scale)}
+                  stroke="#facc15"
+                  strokeWidth={2}
+                  strokeDasharray="4 2"
+                />
+              )}
+            </g>
+          )}
+          {/* Point markers */}
+          {measurePoints.map((p, i) => (
+            <g key={`point-${i}`}>
+              <circle
+                cx={feetToPx(p.x, scale)}
+                cy={feetToPx(p.y, scale)}
+                r={6}
+                fill="#facc15"
+                opacity={0.8}
+              />
+              <circle
+                cx={feetToPx(p.x, scale)}
+                cy={feetToPx(p.y, scale)}
+                r={6}
+                fill="none"
+                stroke="#facc15"
+                strokeWidth={2}
+              />
+              <text
+                x={feetToPx(p.x, scale)}
+                y={feetToPx(p.y, scale) - 10}
+                textAnchor="middle"
+                fill="#facc15"
+                fontSize={11}
+                fontFamily="'Space Mono', monospace"
+                fontWeight="700"
+              >
+                {String.fromCharCode(65 + i)}
+              </text>
+            </g>
+          ))}
+        </svg>
+      )}
+
+      {/* Measurement panel */}
+      {measureMode && (
+        <MeasurementPanel
+          points={measurePoints}
+          onClear={handleMeasureClear}
+          onUndo={handleMeasureUndo}
+          onClose={handleMeasureClose}
+        />
       )}
 
       {/* Room editor dialog */}
