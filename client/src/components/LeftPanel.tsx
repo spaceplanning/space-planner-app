@@ -19,6 +19,7 @@ import {
   Trash2,
   LayoutGrid,
   Copy,
+  Star,
 } from "lucide-react";
 import { FloorPlan, Room } from "@/lib/floorPlanTypes";
 import {
@@ -29,28 +30,33 @@ import {
 } from "@/lib/furnitureData";
 import { parseFloorPlanImage, generateDemoFloorPlan, ParseProgress } from "@/lib/imageParsing";
 import FurnitureCustomizeDialog from "./FurnitureCustomizeDialog";
+import FavoritesSection from "./FavoritesSection";
 import { toast } from "sonner";
 
 interface Props {
   plan: FloorPlan;
   allFurniture: FurnitureTemplate[];
+  favorites: string[];
   focusedRoomId: string | null;
   onPlanChange: (plan: FloorPlan) => void;
   onFocusRoom: (roomId: string | null) => void;
   onDragFurniture: (item: FurnitureTemplate) => void;
   onAddCustomFurniture: (furniture: FurnitureTemplate) => void;
   onDeleteCustomFurniture: (id: string) => void;
+  onToggleFavorite: (furnitureId: string) => void;
 }
 
 export default function LeftPanel({
   plan,
   allFurniture,
+  favorites,
   focusedRoomId,
   onPlanChange,
   onFocusRoom,
   onDragFurniture,
   onAddCustomFurniture,
   onDeleteCustomFurniture,
+  onToggleFavorite,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
@@ -387,6 +393,16 @@ export default function LeftPanel({
               </button>
             </div>
 
+            {/* Favorites section */}
+            <div style={{ padding: "0 12px" }}>
+              <FavoritesSection
+                favorites={favorites}
+                allFurniture={allFurniture}
+                onDragFurniture={onDragFurniture}
+                onToggleFavorite={onToggleFavorite}
+              />
+            </div>
+
             {/* Categories */}
             {FURNITURE_CATEGORIES.map((cat) => {
               const items = grouped[cat] || [];
@@ -477,6 +493,31 @@ export default function LeftPanel({
                           >
                             {item.widthFt}' × {item.depthFt}'
                           </div>
+                          {/* Star button to favorite */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleFavorite(item.id);
+                            }}
+                            style={{
+                              position: "absolute",
+                              top: 2,
+                              left: 2,
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              color: favorites.includes(item.id) ? "var(--bp-dim-yellow)" : "var(--bp-text-muted)",
+                              padding: 2,
+                              opacity: favorites.includes(item.id) ? 1 : 0.5,
+                              transition: "all 160ms",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = favorites.includes(item.id) ? "1" : "0.5")}
+                            title={favorites.includes(item.id) ? "Remove from favorites" : "Add to favorites"}
+                          >
+                            <Star size={8} fill={favorites.includes(item.id) ? "currentColor" : "none"} />
+                          </button>
+
                           {/* Customize button for standard items */}
                           {!item.isCustom && (
                             <button

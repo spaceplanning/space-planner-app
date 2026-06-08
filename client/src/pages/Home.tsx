@@ -12,6 +12,8 @@ import {
   saveCustomFurniture,
   loadActivePlanId,
   saveActivePlanId,
+  loadFavorites,
+  saveFavorites,
   generateId,
 } from "@/lib/floorPlanTypes";
 import {
@@ -40,6 +42,7 @@ export default function Home() {
   const [plans, setPlans] = useState<FloorPlan[]>([]);
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [customFurniture, setCustomFurniture] = useState<FurnitureTemplate[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [focusedRoomId, setFocusedRoomId] = useState<string | null>(null);
   const [draggedFurniture, setDraggedFurniture] = useState<FurnitureTemplate | null>(null);
   const [showCustomDialog, setShowCustomDialog] = useState(false);
@@ -50,8 +53,10 @@ export default function Home() {
     const savedPlans = loadPlans();
     const savedCustom = loadCustomFurniture();
     const savedActiveId = loadActivePlanId();
+    const savedFavorites = loadFavorites();
 
     setCustomFurniture(savedCustom);
+    setFavorites(savedFavorites);
 
     if (savedPlans.length > 0) {
       setPlans(savedPlans);
@@ -80,6 +85,11 @@ export default function Home() {
   useEffect(() => {
     saveCustomFurniture(customFurniture);
   }, [customFurniture]);
+
+  // Persist favorites
+  useEffect(() => {
+    saveFavorites(favorites);
+  }, [favorites]);
 
   const activePlan = plans.find((p) => p.id === activePlanId) || plans[0];
 
@@ -135,6 +145,14 @@ export default function Home() {
     setCustomFurniture((prev) => prev.filter((f) => f.id !== id));
   }, []);
 
+  const handleToggleFavorite = useCallback((furnitureId: string) => {
+    setFavorites((prev) =>
+      prev.includes(furnitureId)
+        ? prev.filter((id) => id !== furnitureId)
+        : [...prev, furnitureId]
+    );
+  }, []);
+
   const allFurniture = [...DEFAULT_FURNITURE, ...customFurniture];
 
   if (!activePlan) return null;
@@ -169,12 +187,14 @@ export default function Home() {
         <LeftPanel
           plan={activePlan}
           allFurniture={allFurniture}
+          favorites={favorites}
           focusedRoomId={focusedRoomId}
           onPlanChange={handlePlanChange}
           onFocusRoom={handleFocusRoom}
           onDragFurniture={handleDragFurniture}
           onAddCustomFurniture={() => setShowCustomDialog(true)}
           onDeleteCustomFurniture={handleDeleteCustomFurniture}
+          onToggleFavorite={handleToggleFavorite}
         />
 
         {/* Canvas */}

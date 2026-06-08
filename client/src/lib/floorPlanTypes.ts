@@ -70,6 +70,7 @@ export const ROOM_LABEL_COLORS: Record<string, string> = {
 const STORAGE_KEY_PLANS = "spaceplanner_plans";
 const STORAGE_KEY_CUSTOM_FURNITURE = "spaceplanner_custom_furniture";
 const STORAGE_KEY_ACTIVE_PLAN = "spaceplanner_active_plan";
+const STORAGE_KEY_FAVORITES = "spaceplanner_favorites";
 
 export function savePlans(plans: FloorPlan[]): void {
   try {
@@ -115,6 +116,23 @@ export function saveActivePlanId(id: string | null): void {
 
 export function loadActivePlanId(): string | null {
   return localStorage.getItem(STORAGE_KEY_ACTIVE_PLAN);
+}
+
+export function saveFavorites(favorites: string[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_FAVORITES, JSON.stringify(favorites));
+  } catch (e) {
+    console.error("Failed to save favorites:", e);
+  }
+}
+
+export function loadFavorites(): string[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_FAVORITES);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
 }
 
 export function generateId(): string {
