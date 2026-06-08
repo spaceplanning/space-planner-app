@@ -18,6 +18,7 @@ import {
   EyeOff,
   Trash2,
   LayoutGrid,
+  Copy,
 } from "lucide-react";
 import { FloorPlan, Room } from "@/lib/floorPlanTypes";
 import {
@@ -27,6 +28,7 @@ import {
   CATEGORY_COLORS,
 } from "@/lib/furnitureData";
 import { parseFloorPlanImage, generateDemoFloorPlan, ParseProgress } from "@/lib/imageParsing";
+import FurnitureCustomizeDialog from "./FurnitureCustomizeDialog";
 import { toast } from "sonner";
 
 interface Props {
@@ -36,7 +38,7 @@ interface Props {
   onPlanChange: (plan: FloorPlan) => void;
   onFocusRoom: (roomId: string | null) => void;
   onDragFurniture: (item: FurnitureTemplate) => void;
-  onAddCustomFurniture: () => void;
+  onAddCustomFurniture: (furniture: FurnitureTemplate) => void;
   onDeleteCustomFurniture: (id: string) => void;
 }
 
@@ -64,6 +66,7 @@ export default function LeftPanel({
   });
   const [activeTab, setActiveTab] = useState<"library" | "rooms">("library");
   const [librarySearch, setLibrarySearch] = useState("");
+  const [customizeItem, setCustomizeItem] = useState<FurnitureTemplate | null>(null);
 
   const toggleSection = (key: string) =>
     setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -377,7 +380,7 @@ export default function LeftPanel({
               <button
                 className="bp-btn bp-btn-primary"
                 style={{ width: "100%", fontSize: 10, padding: "5px 0" }}
-                onClick={onAddCustomFurniture}
+                onClick={() => onAddCustomFurniture({} as FurnitureTemplate)}
               >
                 <Plus size={10} style={{ display: "inline", marginRight: 4 }} />
                 ADD CUSTOM FURNITURE
@@ -438,6 +441,7 @@ export default function LeftPanel({
                           draggable
                           onDragStart={() => onDragFurniture(item)}
                           title={`${item.name}\n${item.widthFt}' × ${item.depthFt}'`}
+                          style={{ position: "relative" }}
                         >
                           {/* Mini preview */}
                           <div
@@ -473,6 +477,32 @@ export default function LeftPanel({
                           >
                             {item.widthFt}' × {item.depthFt}'
                           </div>
+                          {/* Customize button for standard items */}
+                          {!item.isCustom && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomizeItem(item);
+                              }}
+                              style={{
+                                position: "absolute",
+                                top: 2,
+                                right: 2,
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: "var(--bp-cyan)",
+                                padding: 2,
+                                opacity: 0.6,
+                                transition: "opacity 160ms",
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
+                              title="Customize and save as new variant"
+                            >
+                              <Copy size={8} />
+                            </button>
+                          )}
                           {item.isCustom && (
                             <button
                               onClick={(e) => {
@@ -620,6 +650,18 @@ export default function LeftPanel({
         <br />
         ALT+DRAG TO PAN · SCROLL TO ZOOM
       </div>
+
+      {/* Customize dialog */}
+      {customizeItem && (
+        <FurnitureCustomizeDialog
+          furniture={customizeItem}
+          onSave={(custom) => {
+            onAddCustomFurniture(custom);
+            setCustomizeItem(null);
+          }}
+          onClose={() => setCustomizeItem(null)}
+        />
+      )}
     </div>
   );
 }
