@@ -1,0 +1,310 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   SPACE PLANNER STUDIO — Blueprint Dark Theme
+   Design: Technical Blueprint (Mid-century drafting aesthetic)
+   - Background: deep navy #0a1628
+   - Grid: subtle #1a3a6b lines
+   - Walls: #e0f2fe crisp white-blue
+   - Dimensions: #facc15 yellow
+   - Accent: #22d3ee cyan
+   - Font: Space Mono (labels) + IBM Plex Sans (UI)
+   ============================================================ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-mono: 'Space Mono', monospace;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+}
+
+:root {
+  --radius: 0.25rem;
+  /* Blueprint dark navy palette */
+  --background: oklch(0.12 0.04 240);
+  --foreground: oklch(0.92 0.02 210);
+  --card: oklch(0.15 0.04 240);
+  --card-foreground: oklch(0.92 0.02 210);
+  --popover: oklch(0.15 0.04 240);
+  --popover-foreground: oklch(0.92 0.02 210);
+  --primary: oklch(0.72 0.18 195);
+  --primary-foreground: oklch(0.10 0.04 240);
+  --secondary: oklch(0.18 0.04 240);
+  --secondary-foreground: oklch(0.80 0.04 210);
+  --muted: oklch(0.20 0.03 240);
+  --muted-foreground: oklch(0.60 0.04 220);
+  --accent: oklch(0.72 0.18 195);
+  --accent-foreground: oklch(0.10 0.04 240);
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.25 0.06 240);
+  --input: oklch(0.20 0.04 240);
+  --ring: oklch(0.72 0.18 195);
+  --sidebar: oklch(0.13 0.04 240);
+  --sidebar-foreground: oklch(0.88 0.02 210);
+  --sidebar-primary: oklch(0.72 0.18 195);
+  --sidebar-primary-foreground: oklch(0.10 0.04 240);
+  --sidebar-accent: oklch(0.18 0.04 240);
+  --sidebar-accent-foreground: oklch(0.88 0.02 210);
+  --sidebar-border: oklch(0.22 0.05 240);
+  --sidebar-ring: oklch(0.72 0.18 195);
+
+  /* Blueprint-specific custom properties */
+  --bp-navy: #0a1628;
+  --bp-navy-light: #0f2040;
+  --bp-panel: #0d1e35;
+  --bp-grid-subtle: #1a3a6b;
+  --bp-grid-major: #1e4a8a;
+  --bp-wall: #e0f2fe;
+  --bp-wall-dim: #7dd3fc;
+  --bp-dim-yellow: #facc15;
+  --bp-cyan: #22d3ee;
+  --bp-cyan-dim: #0891b2;
+  --bp-selection: #3b82f6;
+  --bp-green: #10b981;
+  --bp-red: #ef4444;
+  --bp-text-primary: #e0f2fe;
+  --bp-text-secondary: #7dd3fc;
+  --bp-text-muted: #4a7fa5;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'IBM Plex Sans', sans-serif;
+    background-color: var(--bp-navy);
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+  /* Scrollbar styling for blueprint theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bp-navy);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--bp-grid-major);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--bp-cyan-dim);
+  }
+}
+
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      max-width: 1280px;
+    }
+  }
+
+  /* Blueprint UI components */
+  .bp-panel {
+    background-color: var(--bp-panel);
+    border: 1px solid var(--bp-grid-major);
+  }
+  .bp-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bp-text-muted);
+  }
+  .bp-dim {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--bp-dim-yellow);
+  }
+  .bp-title {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    color: var(--bp-text-primary);
+  }
+  .bp-btn {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 6px 12px;
+    border: 1px solid var(--bp-grid-major);
+    background: transparent;
+    color: var(--bp-text-secondary);
+    transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .bp-btn:hover {
+    border-color: var(--bp-cyan);
+    color: var(--bp-cyan);
+    background: rgba(34, 211, 238, 0.05);
+  }
+  .bp-btn:active {
+    transform: scale(0.97);
+  }
+  .bp-btn-primary {
+    background: var(--bp-cyan-dim);
+    border-color: var(--bp-cyan);
+    color: var(--bp-navy);
+    font-weight: 600;
+  }
+  .bp-btn-primary:hover {
+    background: var(--bp-cyan);
+    color: var(--bp-navy);
+  }
+  .bp-input {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: var(--bp-navy);
+    border: 1px solid var(--bp-grid-major);
+    color: var(--bp-text-primary);
+    padding: 6px 10px;
+    outline: none;
+    transition: border-color 160ms;
+  }
+  .bp-input:focus {
+    border-color: var(--bp-cyan);
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.15);
+  }
+  .bp-section-header {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--bp-cyan-dim);
+    padding: 8px 12px 4px;
+    border-bottom: 1px solid var(--bp-grid-subtle);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .bp-section-header::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 1px;
+    background: var(--bp-cyan);
+  }
+
+  /* Canvas grid */
+  .canvas-grid {
+    background-color: var(--bp-navy);
+    background-image:
+      linear-gradient(var(--bp-grid-subtle) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bp-grid-subtle) 1px, transparent 1px),
+      linear-gradient(rgba(30, 74, 138, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 74, 138, 0.3) 1px, transparent 1px);
+    background-size: 10px 10px, 10px 10px, 100px 100px, 100px 100px;
+  }
+
+  /* Furniture item card */
+  .furniture-item {
+    border: 1px solid var(--bp-grid-major);
+    background: var(--bp-navy-light);
+    padding: 8px;
+    cursor: grab;
+    transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+  }
+  .furniture-item:hover {
+    border-color: var(--bp-cyan);
+    background: rgba(34, 211, 238, 0.05);
+    transform: translateY(-1px);
+  }
+  .furniture-item:active {
+    cursor: grabbing;
+    transform: scale(0.97);
+  }
+
+  /* Scan animation for upload */
+  @keyframes scan-line {
+    0% { transform: translateY(-100%); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+  }
+  .scan-line {
+    animation: scan-line 2s linear infinite;
+    background: linear-gradient(transparent, rgba(34, 211, 238, 0.6), transparent);
+    height: 4px;
+    width: 100%;
+    position: absolute;
+    left: 0;
+  }
+
+  /* Selection glow */
+  @keyframes selection-pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+  .selection-glow {
+    animation: selection-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Crosshair cursor for canvas */
+  .canvas-cursor {
+    cursor: crosshair;
+  }
+}
