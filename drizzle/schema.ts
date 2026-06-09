@@ -35,8 +35,8 @@ export const floorPlans = mysqlTable("floorPlans", {
   totalWidth: int("totalWidth").notNull().default(0),
   totalHeight: int("totalHeight").notNull().default(0),
   // Store rooms and furniture as JSON
-  roomsJson: text("roomsJson").notNull().default("[]"),
-  furnitureJson: text("furnitureJson").notNull().default("[]"),
+  roomsJson: text("roomsJson").notNull(),
+  furnitureJson: text("furnitureJson").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
