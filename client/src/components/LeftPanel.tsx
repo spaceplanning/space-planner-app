@@ -28,7 +28,7 @@ import {
   FURNITURE_CATEGORIES,
   CATEGORY_COLORS,
 } from "@/lib/furnitureData";
-import { parseFloorPlanImage, generateDemoFloorPlan, ParseProgress } from "@/lib/imageParsing";
+import { parseFloorPlanImage, ParseProgress } from "@/lib/imageParsing";
 import FurnitureCustomizeDialog from "./FurnitureCustomizeDialog";
 import FavoritesSection from "./FavoritesSection";
 import { toast } from "sonner";
@@ -128,16 +128,10 @@ export default function LeftPanel({
     if (file) processFile(file);
   };
 
-  const loadDemo = () => {
-    const demo = generateDemoFloorPlan();
-    onPlanChange({
-      ...plan,
-      totalWidth: demo.totalWidth,
-      totalHeight: demo.totalHeight,
-      rooms: demo.rooms,
-      updatedAt: Date.now(),
-    });
-    toast.success("Demo floor plan loaded");
+  const loadPreviousPlan = () => {
+    // This will be handled by the parent component through a prop
+    // For now, we'll just show a message
+    toast.info("Select a plan from the Plans menu in the top toolbar");
   };
 
   const filteredFurniture = allFurniture.filter((f) =>
@@ -311,14 +305,14 @@ export default function LeftPanel({
               </div>
             )}
 
-            {/* Demo button */}
+            {/* Load Previous Plans button */}
             <button
               className="bp-btn"
               style={{ width: "100%", fontSize: 10, padding: "5px 0" }}
-              onClick={loadDemo}
+              onClick={loadPreviousPlan}
             >
               <LayoutGrid size={10} style={{ display: "inline", marginRight: 4 }} />
-              LOAD DEMO FLOOR PLAN
+              LOAD PREVIOUS PLANS
             </button>
           </div>
         )}

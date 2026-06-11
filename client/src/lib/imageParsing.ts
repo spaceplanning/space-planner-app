@@ -125,7 +125,7 @@ Rules:
 
   let responseText = "";
   try {
-    const response = await fetch(`${apiUrl}/chat/completions`, {
+    const response = await fetch(`${apiUrl}/v1/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
