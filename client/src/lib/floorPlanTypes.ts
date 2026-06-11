@@ -29,6 +29,7 @@ export interface PlacedFurniture {
   rotation: number; // 0, 45, 90, 135, 180, 225, 270, 315
   color: string;
   category: string;
+  furnitureType?: string; // SVG symbol type (e.g., 'bed_queen', 'sofa_3seat')
 }
 
 export interface FloorPlan {

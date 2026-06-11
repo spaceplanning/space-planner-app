@@ -20,6 +20,7 @@ import {
   generateId,
 } from "@/lib/floorPlanTypes";
 import { FurnitureTemplate, CATEGORY_COLORS } from "@/lib/furnitureData";
+import { FURNITURE_SYMBOLS } from "@/lib/furnitureSymbols";
 import { RotateCw, Trash2, Move, Edit3, Ruler } from "lucide-react";
 import RoomEditorDialog from "./RoomEditorDialog";
 import MeasurementPanel from "./MeasurementPanel";
@@ -240,6 +241,7 @@ export default function FloorPlanCanvas({
           rotation: 0,
           color: CATEGORY_COLORS[draggedFurniture.category] || "#22d3ee",
           category: draggedFurniture.category,
+          furnitureType: draggedFurniture.id, // Use furniture ID as the symbol type
         };
         onPlanChange({
           ...plan,
@@ -445,15 +447,36 @@ export default function FloorPlanCanvas({
               className="selection-glow"
             />
           )}
+          {/* Furniture symbol */}
+          <g
+            x={feetToPx(item.x, scale)}
+            y={feetToPx(item.y, scale)}
+            style={{
+              color: isSelected ? "#3b82f6" : isHovered ? "#22d3ee" : item.color,
+            }}
+          >
+            <svg
+              x={feetToPx(item.x, scale)}
+              y={feetToPx(item.y, scale)}
+              width={fw}
+              height={fh}
+              viewBox="0 0 100 100"
+              style={{ overflow: "visible" }}
+              dangerouslySetInnerHTML={{
+                __html: (item.furnitureType && FURNITURE_SYMBOLS[item.furnitureType]) || FURNITURE_SYMBOLS.chair_dining,
+              }}
+            />
+          </g>
+          {/* Fallback rectangle for selection */}
           <rect
             x={feetToPx(item.x, scale)}
             y={feetToPx(item.y, scale)}
             width={fw}
             height={fh}
-            fill={item.color}
-            fillOpacity={0.35}
+            fill="none"
             stroke={isSelected ? "#3b82f6" : isHovered ? "#22d3ee" : item.color}
             strokeWidth={isSelected ? 2 : 1.5}
+            opacity={0.3}
           />
           {fw > 30 && fh > 20 && (
             <text
