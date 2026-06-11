@@ -5,6 +5,7 @@
 
 import React from "react";
 import { FurnitureTemplate, CATEGORY_COLORS } from "@/lib/furnitureData";
+import { FURNITURE_SYMBOLS } from "@/lib/furnitureSymbols";
 
 interface Props {
   favorites: string[];
@@ -58,11 +59,26 @@ export default function FavoritesSection({
                   aspectRatio: `${item.widthFt} / ${item.depthFt}`,
                   maxHeight: 40,
                   background: catColor,
-                  opacity: 0.25,
+                  opacity: 0.15,
                   border: `1px solid ${catColor}`,
                   marginBottom: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                  overflow: "hidden",
                 }}
-              />
+              >
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 100 100"
+                  style={{ position: "absolute" }}
+                  dangerouslySetInnerHTML={{
+                    __html: FURNITURE_SYMBOLS[item.id] || FURNITURE_SYMBOLS.chair_dining,
+                  }}
+                />
+              </div>
               <div
                 style={{
                   fontFamily: "'Space Mono', monospace",
