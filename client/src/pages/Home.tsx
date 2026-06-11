@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { isCloudMode, isLocalMode } from "@/lib/appMode";
 import { Button } from "@/components/ui/button";
 import {
   FloorPlan,
@@ -82,16 +83,31 @@ export default function Home() {
 
   // Load user's floor plans from database
   const { data: dbPlans = [] } = trpc.floorPlans.list.useQuery(undefined, {
-    enabled: isAuthenticated,
+    enabled: isCloudMode && isAuthenticated,
   });
 
   // Load user's custom furniture from database
   const { data: dbCustomFurniture = [] } = trpc.customFurniture.list.useQuery(undefined, {
-    enabled: isAuthenticated,
+    enabled: isCloudMode && isAuthenticated,
   });
+
+  useEffect(() => {
+    if (!isLocalMode) return;
+
+    const localPlans = loadPlans();
+    const nextPlans = localPlans.length > 0 ? localPlans : [createEmptyPlan("New Plan")];
+    const savedActiveId = loadActivePlanId();
+    const activeExists = nextPlans.some((p) => p.id === savedActiveId);
+
+    setPlans(nextPlans);
+    setActivePlanId(activeExists ? savedActiveId : nextPlans[0].id);
+    setCustomFurniture(loadCustomFurniture());
+  }, []);
 
   // Sync database floor plans to local state
   useEffect(() => {
+    if (!isCloudMode) return;
+
     if (dbPlans.length > 0) {
       const convertedPlans: FloorPlan[] = dbPlans.map((dbPlan) => ({
         id: dbPlan.id,
@@ -112,6 +128,8 @@ export default function Home() {
 
   // Sync database custom furniture to local state
   useEffect(() => {
+    if (!isCloudMode) return;
+
     if (dbCustomFurniture.length > 0) {
       const converted: FurnitureTemplate[] = dbCustomFurniture.map((item) => ({
         id: item.id,
@@ -135,7 +153,12 @@ export default function Home() {
   // Persist plans to database when they change
   const saveFloorPlanMutation = trpc.floorPlans.save.useMutation();
   useEffect(() => {
-    if (plans.length > 0 && isAuthenticated) {
+    if (isLocalMode && plans.length > 0) {
+      savePlans(plans);
+      return;
+    }
+
+    if (plans.length > 0 && isCloudMode && isAuthenticated) {
       plans.forEach((plan) => {
         saveFloorPlanMutation.mutate({
           id: plan.id,
@@ -152,7 +175,12 @@ export default function Home() {
   // Persist custom furniture to database
   const saveCustomFurnitureMutation = trpc.customFurniture.save.useMutation();
   useEffect(() => {
-    if (customFurniture.length > 0 && isAuthenticated) {
+    if (isLocalMode) {
+      saveCustomFurniture(customFurniture);
+      return;
+    }
+
+    if (customFurniture.length > 0 && isCloudMode && isAuthenticated) {
       customFurniture.forEach((item) => {
         if (item.isCustom) {
           saveCustomFurnitureMutation.mutate({

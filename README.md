@@ -10,6 +10,19 @@ This template gives you a React 19 + Tailwind 4 + Express 4 + tRPC 11 stack with
 - **Superjson out of the box:** return Drizzle rows directly—`Date` stays a `Date`.
 - **Auth baked in:** `/api/oauth/callback` handles Manus OAuth, `protectedProcedure` injects `ctx.user`.
 - **Gateway-ready:** all RPC traffic is under `/api/trpc`, making it easy to route at the edge.
+- **Export-ready:** finished plans can be downloaded as PDF/PNG, exported as an editable PDF, or emailed as a summary draft.
+- **Installer-ready:** the project now includes a compressed installer package flow via `npm run package:installer`.
+
+---
+
+## Export & Delivery Workflow
+
+- Use the export dialog to download a standard PDF/PNG, create an editable PDF, or open a pre-filled email draft with a summary of the current plan.
+- The export logic lives in `client/src/lib/exportUtils.ts` and the export controls are wired in `client/src/components/ExportDialog.tsx`.
+- To produce a compressed installer package for distribution, run `npm run package:installer`.
+  - Output is written to `dist/installer/SpacePlanning_App_Installer.zip`.
+  - A customer-facing installer launcher is generated at `dist/installer/install.ps1`.
+  - The launcher now includes a folder-selection screen and a hold-harmless acknowledgment step before extraction.
 
 ---
 

@@ -4,9 +4,9 @@
 // ============================================================
 
 import React, { useState } from "react";
-import { X, Download, Loader2 } from "lucide-react";
+import { X, Download, Loader2, Mail, FileText } from "lucide-react";
 import { FloorPlan } from "@/lib/floorPlanTypes";
-import { exportFloorPlan } from "@/lib/exportUtils";
+import { emailPlan, exportFloorPlan } from "@/lib/exportUtils";
 import { toast } from "sonner";
 
 interface Props {
@@ -17,6 +17,7 @@ interface Props {
 
 export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
   const [format, setFormat] = useState<"pdf" | "png">("pdf");
+  const [exportMode, setExportMode] = useState<"download" | "editable" | "email">("download");
   const [quality, setQuality] = useState<1 | 2 | 3>(2);
   const [includeMetadata, setIncludeMetadata] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
@@ -28,6 +29,13 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
   };
 
   const handleExport = async () => {
+    if (exportMode === "email") {
+      emailPlan(plan);
+      toast.success("Email draft opened with your plan summary.");
+      onClose();
+      return;
+    }
+
     if (!canvasElement) {
       toast.error("Canvas not ready");
       return;
@@ -36,11 +44,15 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
     setIsExporting(true);
     try {
       await exportFloorPlan(canvasElement, plan, {
-        format,
+        format: exportMode === "editable" ? "editable-pdf" : format,
         scale: quality,
         includeMetadata,
       });
-      toast.success(`Floor plan exported as ${format.toUpperCase()}`);
+      toast.success(
+        exportMode === "editable"
+          ? "Editable PDF exported successfully"
+          : `Floor plan exported as ${format.toUpperCase()}`
+      );
       onClose();
     } catch (err) {
       toast.error((err as Error).message);
@@ -171,6 +183,40 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
             </div>
           </div>
 
+          {/* Export mode selection */}
+          <div>
+            <label style={labelStyle}>Export Method</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {([
+                { key: "download", label: "Download PDF / PNG", icon: <Download size={12} /> },
+                { key: "editable", label: "Download Editable PDF", icon: <FileText size={12} /> },
+                { key: "email", label: "Email Plan Summary", icon: <Mail size={12} /> },
+              ] as const).map((mode) => (
+                <label
+                  key={mode.key}
+                  style={{
+                    ...optionStyle,
+                    background: exportMode === mode.key ? "rgba(34,211,238,0.1)" : "var(--bp-navy)",
+                    borderColor: exportMode === mode.key ? "var(--bp-cyan)" : "var(--bp-grid-major)",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="exportMode"
+                    value={mode.key}
+                    checked={exportMode === mode.key}
+                    onChange={() => setExportMode(mode.key)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "'Space Mono', monospace", fontSize: 10, color: exportMode === mode.key ? "var(--bp-cyan)" : "var(--bp-text-primary)" }}>
+                    {mode.icon}
+                    {mode.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Format selection */}
           <div>
             <label style={labelStyle}>Export Format</label>
@@ -207,83 +253,88 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
           </div>
 
           {/* Quality selection */}
-          <div>
-            <label style={labelStyle}>Resolution Quality</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {(["1", "2", "3"] as const).map((q) => {
-                const qNum = parseInt(q) as 1 | 2 | 3;
-                return (
-                  <label
-                    key={q}
-                    style={{
-                      ...optionStyle,
-                      background: quality === qNum ? "rgba(34,211,238,0.1)" : "var(--bp-navy)",
-                      borderColor: quality === qNum ? "var(--bp-cyan)" : "var(--bp-grid-major)",
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="quality"
-                      value={q}
-                      checked={quality === qNum}
-                      onChange={() => setQuality(qNum)}
-                      style={{ cursor: "pointer" }}
-                    />
-                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: quality === qNum ? "var(--bp-cyan)" : "var(--bp-text-primary)" }}>
-                      {qualityLabels[qNum]}
-                    </span>
-                    {qNum === 3 && (
-                      <span style={{ marginLeft: "auto", fontFamily: "'Space Mono', monospace", fontSize: 8, color: "var(--bp-dim-yellow)" }}>
-                        BEST FOR PRINTING
+          {exportMode !== "email" && (
+            <div>
+              <label style={labelStyle}>Resolution Quality</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {(["1", "2", "3"] as const).map((q) => {
+                  const qNum = parseInt(q) as 1 | 2 | 3;
+                  return (
+                    <label
+                      key={q}
+                      style={{
+                        ...optionStyle,
+                        background: quality === qNum ? "rgba(34,211,238,0.1)" : "var(--bp-navy)",
+                        borderColor: quality === qNum ? "var(--bp-cyan)" : "var(--bp-grid-major)",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="quality"
+                        value={q}
+                        checked={quality === qNum}
+                        onChange={() => setQuality(qNum)}
+                        style={{ cursor: "pointer" }}
+                      />
+                      <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: quality === qNum ? "var(--bp-cyan)" : "var(--bp-text-primary)" }}>
+                        {qualityLabels[qNum]}
                       </span>
-                    )}
-                  </label>
-                );
-              })}
+                      {qNum === 3 && (
+                        <span style={{ marginLeft: "auto", fontFamily: "'Space Mono', monospace", fontSize: 8, color: "var(--bp-dim-yellow)" }}>
+                          BEST FOR PRINTING
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Metadata checkbox */}
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 10px",
-              background: "var(--bp-navy)",
-              border: "1px solid var(--bp-grid-subtle)",
-              cursor: "pointer",
-              transition: "all 160ms",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={includeMetadata}
-              onChange={(e) => setIncludeMetadata(e.target.checked)}
-              style={{ cursor: "pointer" }}
-            />
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "var(--bp-text-primary)" }}>
-              Include metadata (plan name, dimensions, export date)
-            </span>
-          </label>
+          {exportMode !== "email" && (
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                background: "var(--bp-navy)",
+                border: "1px solid var(--bp-grid-subtle)",
+                cursor: "pointer",
+                transition: "all 160ms",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={includeMetadata}
+                onChange={(e) => setIncludeMetadata(e.target.checked)}
+                style={{ cursor: "pointer" }}
+              />
+              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: "var(--bp-text-primary)" }}>
+                Include metadata (plan name, dimensions, export date)
+              </span>
+            </label>
+          )}
 
           {/* File size estimate */}
-          <div
-            style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: 8,
-              color: "var(--bp-text-muted)",
-              background: "var(--bp-navy)",
-              border: "1px solid var(--bp-grid-subtle)",
-              padding: "6px 10px",
-              lineHeight: 1.6,
-            }}
-          >
-            {quality === 1 && "Standard quality: ~2-3 MB"}
-            {quality === 2 && "High quality: ~4-6 MB (recommended)"}
-            {quality === 3 && "Ultra quality: ~8-12 MB (best for printing)"}
-          </div>
-
+          {exportMode !== "email" && (
+            <div
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: 8,
+                color: "var(--bp-text-muted)",
+                background: "var(--bp-navy)",
+                border: "1px solid var(--bp-grid-subtle)",
+                padding: "6px 10px",
+                lineHeight: 1.6,
+              }}
+            >
+              {quality === 1 && "Standard quality: ~2-3 MB"}
+              {quality === 2 && "High quality: ~4-6 MB (recommended)"}
+              {quality === 3 && "Ultra quality: ~8-12 MB (best for printing)"}
+            </div>
+          )}
           {/* Actions */}
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
             <button
@@ -304,6 +355,16 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
                 <>
                   <Loader2 size={12} style={{ display: "inline", marginRight: 4, animation: "spin 1s linear infinite" }} />
                   EXPORTING...
+                </>
+              ) : exportMode === "email" ? (
+                <>
+                  <Mail size={12} style={{ display: "inline", marginRight: 4 }} />
+                  OPEN EMAIL
+                </>
+              ) : exportMode === "editable" ? (
+                <>
+                  <FileText size={12} style={{ display: "inline", marginRight: 4 }} />
+                  EXPORT EDITABLE PDF
                 </>
               ) : (
                 <>

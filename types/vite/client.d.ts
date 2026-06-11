@@ -1,9 +1,11 @@
-interface ImportMetaEnv {
-  readonly [key: string]: string | boolean | undefined;
-}
+declare global {
+  interface ImportMetaEnv {
+    readonly [key: string]: string | boolean | undefined;
+  }
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
 }
 
 export {};

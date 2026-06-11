@@ -8,7 +8,7 @@ import jsPDF from "jspdf";
 import { FloorPlan, formatFeetInches } from "./floorPlanTypes";
 
 export interface ExportOptions {
-  format: "pdf" | "png";
+  format: "pdf" | "png" | "editable-pdf";
   scale: number; // 1 = 96 DPI, 2 = 192 DPI, 3 = 288 DPI
   includeMetadata: boolean;
 }
@@ -18,6 +18,75 @@ const DEFAULT_OPTIONS: ExportOptions = {
   scale: 2,
   includeMetadata: true,
 };
+
+function buildPlanSummary(plan: FloorPlan): string[] {
+  const rooms = plan.rooms.map((room) => `${room.name} (${formatFeetInches(room.width)} × ${formatFeetInches(room.height)})`).join("; ");
+  const furniture = plan.furniture.slice(0, 8).map((item) => `${item.name} (${formatFeetInches(item.width)} × ${formatFeetInches(item.depth)})`).join("; ");
+
+  return [
+    `Plan: ${plan.name}`,
+    `Dimensions: ${formatFeetInches(plan.totalWidth)} × ${formatFeetInches(plan.totalHeight)}`,
+    `Rooms: ${rooms || "None"}`,
+    `Furniture: ${furniture || "None"}`,
+    `Exported: ${new Date().toLocaleString()}`,
+  ];
+}
+
+function createEditablePdf(plan: FloorPlan): jsPDF {
+  const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const margin = 40;
+  const lineHeight = 18;
+  let y = 52;
+
+  pdf.setFillColor(9, 22, 40);
+  pdf.rect(0, 0, pageWidth, 42, "F");
+  pdf.setTextColor(224, 242, 254);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(18);
+  pdf.text(plan.name || "Finished Floor Plan", margin, 24);
+
+  pdf.setFontSize(10);
+  pdf.setTextColor(148, 163, 184);
+  pdf.text("Editable PDF export for collaboration and sharing", margin, 38);
+
+  pdf.setTextColor(15, 23, 42);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(11);
+
+  buildPlanSummary(plan).forEach((line) => {
+    pdf.text(line, margin, y);
+    y += lineHeight;
+  });
+
+  if (plan.rooms.length > 0) {
+    y += 8;
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Room breakdown", margin, y);
+    y += lineHeight;
+    pdf.setFont("helvetica", "normal");
+
+    plan.rooms.forEach((room) => {
+      pdf.text(`• ${room.name} — ${formatFeetInches(room.width)} × ${formatFeetInches(room.height)}`, margin + 10, y);
+      y += lineHeight;
+    });
+  }
+
+  if (plan.furniture.length > 0) {
+    y += 8;
+    pdf.setFont("helvetica", "bold");
+    pdf.text("Furniture summary", margin, y);
+    y += lineHeight;
+    pdf.setFont("helvetica", "normal");
+
+    plan.furniture.forEach((item) => {
+      pdf.text(`• ${item.name} — ${formatFeetInches(item.width)} × ${formatFeetInches(item.depth)} @ ${item.rotation}°`, margin + 10, y);
+      y += lineHeight;
+    });
+  }
+
+  return pdf;
+}
 
 async function captureCanvas(element: HTMLElement, scale: number): Promise<HTMLCanvasElement> {
   return html2canvas(element, {
@@ -50,6 +119,9 @@ export async function exportFloorPlan(
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    } else if (opts.format === "editable-pdf") {
+      const pdf = createEditablePdf(plan);
+      pdf.save(`${plan.name || "floor-plan"}-${new Date().toISOString().split("T")[0]}-editable.pdf`);
     } else if (opts.format === "pdf") {
       // Convert to PDF
       const imgWidth = canvas.width;
@@ -94,6 +166,22 @@ export async function exportFloorPlan(
     console.error("Export failed:", error);
     throw new Error(`Failed to export floor plan: ${(error as Error).message}`);
   }
+}
+
+export function emailPlan(plan: FloorPlan): void {
+  const lines = buildPlanSummary(plan);
+  const subject = `Floor plan export: ${plan.name}`;
+  const body = [
+    "Hi,",
+    "",
+    "Here is the finished floor plan summary for review:",
+    "",
+    ...lines,
+    "",
+    "You can open the plan in Space Planner and export an editable PDF from the export dialog.",
+  ].join("\n");
+
+  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 // Batch export multiple plans

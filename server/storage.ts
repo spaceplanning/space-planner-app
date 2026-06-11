@@ -30,7 +30,7 @@ function appendHashSuffix(relKey: string): string {
 
 export async function storagePut(
   relKey: string,
-  data: Buffer | Uint8Array | string,
+  data: Uint8Array | string,
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
   const { forgeUrl, forgeKey } = getForgeConfig();

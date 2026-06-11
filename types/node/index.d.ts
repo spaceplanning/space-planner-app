@@ -1,11 +1,13 @@
-declare namespace NodeJS {
-  interface ProcessEnv {
-    [key: string]: string | undefined;
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      [key: string]: string | undefined;
+    }
   }
-}
 
-declare const process: {
-  env: NodeJS.ProcessEnv;
-};
+  const process: {
+    env: NodeJS.ProcessEnv;
+  };
+}
 
 export {};

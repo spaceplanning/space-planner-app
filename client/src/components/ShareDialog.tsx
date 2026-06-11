@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { isLocalMode } from "@/lib/appMode";
 import { toast } from "sonner";
 
 interface ShareDialogProps {
@@ -20,10 +21,15 @@ export default function ShareDialog({
   const createShareMutation = trpc.sharing.createShare.useMutation();
   const { data: shares = [] } = trpc.sharing.getShares.useQuery(
     { floorPlanId },
-    { enabled: true }
+    { enabled: !isLocalMode }
   );
 
   const handleCreateShare = async () => {
+    if (isLocalMode) {
+      toast.info("Cloud sharing is available when cloud mode is configured.");
+      return;
+    }
+
     try {
       const result = await createShareMutation.mutateAsync({
         floorPlanId,
@@ -88,6 +94,32 @@ export default function ShareDialog({
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {isLocalMode ? (
+          <>
+            <h2 style={{ marginTop: 0, color: "var(--bp-cyan)" }}>
+              Cloud Sharing
+            </h2>
+            <p style={{ color: "var(--bp-text-secondary)", lineHeight: 1.5 }}>
+              "{floorPlanName}" is saved locally on this computer. Cloud sharing is disabled in the
+              dependency-free installer build.
+            </p>
+            <button
+              onClick={onClose}
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                background: "transparent",
+                color: "var(--bp-text-secondary)",
+                border: "1px solid var(--bp-text-secondary)",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </>
+        ) : (
+          <>
         <h2 style={{ marginTop: 0, color: "var(--bp-cyan)" }}>
           Share "{floorPlanName}"
         </h2>
@@ -276,6 +308,8 @@ export default function ShareDialog({
         >
           Close
         </button>
+          </>
+        )}
       </div>
     </div>
   );
