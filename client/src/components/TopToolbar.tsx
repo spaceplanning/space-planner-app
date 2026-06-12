@@ -31,6 +31,12 @@ interface Props {
   onDeletePlan: (id: string) => void;
   onFocusRoom: (roomId: string | null) => void;
   canvasElement?: HTMLElement | null;
+  gridSnap?: number;
+  onGridSnapChange?: (snap: number) => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export default function TopToolbar({
@@ -43,12 +49,19 @@ export default function TopToolbar({
   onDeletePlan,
   onFocusRoom,
   canvasElement,
+  gridSnap = 12,
+  onGridSnapChange,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
 }: Props) {
   const [showPlansMenu, setShowPlansMenu] = useState(false);
   const [showRoomMenu, setShowRoomMenu] = useState(false);
   const [showDimensions, setShowDimensions] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showGridMenu, setShowGridMenu] = useState(false);
   const [editWidth, setEditWidth] = useState("");
   const [editHeight, setEditHeight] = useState("");
   const [editName, setEditName] = useState("");
@@ -351,6 +364,98 @@ export default function TopToolbar({
         >
           <Download size={12} />
           EXPORT
+        </button>
+
+        {/* Grid snap dropdown */}
+        <div style={{ position: "relative" }}>
+          <button
+            className="bp-btn"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 10px",
+              borderColor: "var(--bp-grid-major)",
+              color: "var(--bp-text-secondary)",
+            }}
+            onClick={() => { setShowGridMenu(!showGridMenu); setShowPlansMenu(false); setShowRoomMenu(false); setShowDimensions(false); setShowExport(false); }}
+            title="Grid snap size"
+          >
+            <Settings size={12} />
+            GRID: {gridSnap}\" 
+            <ChevronDown size={10} />
+          </button>
+
+          {showGridMenu && (
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                marginTop: 4,
+                background: "var(--bp-panel)",
+                border: "1px solid var(--bp-grid-major)",
+                minWidth: 120,
+                zIndex: 200,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+              }}
+            >
+              {[1, 3, 6].map((snap) => (
+                <div
+                  key={snap}
+                  style={{
+                    padding: "7px 10px",
+                    cursor: "pointer",
+                    borderLeft: gridSnap === snap ? "2px solid var(--bp-cyan)" : "2px solid transparent",
+                    background: gridSnap === snap ? "rgba(34,211,238,0.07)" : "transparent",
+                  }}
+                  onClick={() => {
+                    onGridSnapChange?.(snap);
+                    setShowGridMenu(false);
+                  }}
+                >
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: gridSnap === snap ? "var(--bp-cyan)" : "var(--bp-text-primary)" }}>
+                    {snap}\" SNAP
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Undo/Redo buttons */}
+        <button
+          className="bp-btn"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            opacity: canUndo ? 1 : 0.4,
+            cursor: canUndo ? "pointer" : "not-allowed",
+          }}
+          onClick={onUndo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+        >
+          ↶ UNDO
+        </button>
+
+        <button
+          className="bp-btn"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            opacity: canRedo ? 1 : 0.4,
+            cursor: canRedo ? "pointer" : "not-allowed",
+          }}
+          onClick={onRedo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Y)"
+        >
+          ↷ REDO
         </button>
 
         {/* Spacer */}
