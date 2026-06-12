@@ -234,8 +234,97 @@ export const FURNITURE_SYMBOLS: Record<string, string> = {
   `,
 };
 
-export function getFurnitureSymbol(furnitureType: string): string {
-  return FURNITURE_SYMBOLS[furnitureType] || FURNITURE_SYMBOLS.chair_dining;
+// Map furniture IDs to symbol types
+const FURNITURE_ID_TO_SYMBOL: Record<string, string> = {
+  // Beds
+  "twin-bed": "bed_twin",
+  "full-bed": "bed_full",
+  "queen-bed": "bed_queen",
+  "king-bed": "bed_king",
+  // Sofas
+  "sofa-2seat": "sofa_2seat",
+  "sofa-3seat": "sofa_3seat",
+  "sofa-4seat": "sofa_4seat",
+  "sectional-l-small": "sofa_3seat",
+  "sectional-l-large": "sofa_4seat",
+  "sectional-u": "sofa_4seat",
+  // Chairs
+  "armchair-std": "chair_armchair",
+  "armchair-large": "chair_armchair",
+  "accent-chair": "chair_accent",
+  "wingback-chair": "chair_armchair",
+  "recliner": "chair_armchair",
+  "rocker": "chair_accent",
+  "dining-chair": "chair_dining",
+  "office-chair": "chair_accent",
+  // Tables
+  "coffee-table-small": "table_coffee",
+  "coffee-table-std": "table_coffee",
+  "coffee-table-large": "table_coffee",
+  "coffee-table-round": "table_coffee",
+  "end-table-small": "table_end",
+  "end-table-std": "table_end",
+  "end-table-large": "table_end",
+  "end-table-round": "table_end",
+  "dining-table-4": "table_dining",
+  "dining-table-6": "table_dining",
+  "dining-table-8": "table_dining",
+  "console-table": "table_console",
+  "desk-small": "table_console",
+  "desk-std": "table_console",
+  "desk-large": "table_console",
+  // Entertainment
+  "tv-stand-small": "entertainment_center",
+  "tv-stand-std": "entertainment_center",
+  "tv-stand-large": "entertainment_center",
+  "entertainment-center": "entertainment_center",
+  "entertainment-center-med": "entertainment_center",
+  "entertainment-center-large": "entertainment_center",
+  "bookshelf-narrow": "entertainment_center",
+  "bookshelf-std": "entertainment_center",
+  "bookshelf-wide": "entertainment_center",
+  "bookshelf-office": "entertainment_center",
+  "cabinet": "entertainment_center",
+  // Dressers
+  "dresser-3drawer": "dresser_3drawer",
+  "dresser-5drawer": "dresser_3drawer",
+  "dresser-6drawer": "dresser_6drawer",
+  "dresser-wide": "dresser_6drawer",
+  // Nightstands
+  "nightstand-small": "nightstand",
+  "nightstand-std": "nightstand",
+  "nightstand-large": "nightstand",
+  // Plants
+  "plant-small": "plant_small",
+  "plant-medium": "plant_medium",
+  "plant-large": "plant_large",
+  // Kitchen
+  "fridge": "entertainment_center",
+  "stove": "entertainment_center",
+  "kitchen-island": "table_console",
+  "kitchen-counter": "table_console",
+  "microwave": "entertainment_center",
+  "dishwasher": "entertainment_center",
+  // Bathroom
+  "toilet": "entertainment_center",
+  "sink": "table_console",
+  "bathtub": "entertainment_center",
+  "shower": "entertainment_center",
+  // Decor
+  "mirror": "entertainment_center",
+  "lamp-floor": "plant_small",
+  "lamp-table": "plant_small",
+  "rug-small": "table_coffee",
+  "rug-medium": "table_coffee",
+  "rug-large": "table_coffee",
+  // Other
+  "wardrobe": "entertainment_center",
+  "bench-bed": "table_console",
+};
+
+export function getFurnitureSymbol(furnitureId: string): string {
+  const symbolType = FURNITURE_ID_TO_SYMBOL[furnitureId] || "chair_dining";
+  return FURNITURE_SYMBOLS[symbolType] || FURNITURE_SYMBOLS.chair_dining;
 }
 
 export function renderFurnitureSymbol(

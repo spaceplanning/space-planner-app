@@ -12,6 +12,7 @@ export interface FurnitureTemplate {
   color?: string;
   isCustom?: boolean;
   baseId?: string;   // Reference to original template for customizations
+  symbolType?: string; // SVG symbol type (e.g., 'bed_queen', 'sofa_3seat')
 }
 
 export type FurnitureCategory =
@@ -28,7 +29,7 @@ export const DEFAULT_FURNITURE: FurnitureTemplate[] = [
   // ============================================================
   // BEDROOM
   // ============================================================
-  { id: "twin-bed", name: "Twin Bed", category: "Bedroom", widthFt: 3.25, depthFt: 6.25 },
+  { id: "twin-bed", name: "Twin Bed", category: "Bedroom", widthFt: 3.25, depthFt: 6.25, symbolType: "bed_twin" },
   { id: "full-bed", name: "Full Bed", category: "Bedroom", widthFt: 4.5, depthFt: 6.25 },
   { id: "queen-bed", name: "Queen Bed", category: "Bedroom", widthFt: 5, depthFt: 6.67 },
   { id: "king-bed", name: "King Bed", category: "Bedroom", widthFt: 6.33, depthFt: 6.67 },
