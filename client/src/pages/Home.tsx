@@ -52,6 +52,7 @@ export default function Home() {
   const [focusedRoomId, setFocusedRoomId] = useState<string | null>(null);
   const [draggedFurniture, setDraggedFurniture] = useState<FurnitureTemplate | null>(null);
   const [showCustomDialog, setShowCustomDialog] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Load user's floor plans from database
@@ -301,6 +302,8 @@ export default function Home() {
         onDeletePlan={handleDeletePlan}
         onFocusRoom={handleFocusRoom}
         canvasElement={canvasContainerRef.current}
+        showLabels={showLabels}
+        onToggleLabels={setShowLabels}
       />
 
       {/* Main content */}
@@ -327,6 +330,8 @@ export default function Home() {
             onPlanChange={handlePlanChange}
             draggedFurniture={draggedFurniture}
             onDragEnd={handleDragEnd}
+            showLabels={showLabels}
+            onToggleLabels={setShowLabels}
           />
         </div>
       </div>

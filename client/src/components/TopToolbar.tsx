@@ -37,6 +37,8 @@ interface Props {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  showLabels?: boolean;
+  onToggleLabels?: (show: boolean) => void;
 }
 
 export default function TopToolbar({
@@ -55,6 +57,8 @@ export default function TopToolbar({
   canRedo = false,
   onUndo,
   onRedo,
+  showLabels = true,
+  onToggleLabels,
 }: Props) {
   const [showPlansMenu, setShowPlansMenu] = useState(false);
   const [showRoomMenu, setShowRoomMenu] = useState(false);
@@ -456,6 +460,24 @@ export default function TopToolbar({
           title="Redo (Ctrl+Y)"
         >
           ↷ REDO
+        </button>
+
+        {/* Labels toggle */}
+        <button
+          className="bp-btn"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            borderColor: showLabels ? "var(--bp-cyan)" : "var(--bp-grid-major)",
+            color: showLabels ? "var(--bp-cyan)" : "var(--bp-text-secondary)",
+          }}
+          onClick={() => onToggleLabels?.(!showLabels)}
+          title="Toggle dimension labels (Ctrl+L)"
+        >
+          <Eye size={12} />
+          LABELS
         </button>
 
         {/* Spacer */}

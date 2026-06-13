@@ -36,6 +36,8 @@ interface Props {
   onPlanChange: (plan: FloorPlan) => void;
   draggedFurniture: FurnitureTemplate | null;
   onDragEnd: () => void;
+  showLabels?: boolean;
+  onToggleLabels?: (show: boolean) => void;
 }
 
 interface DragState {
@@ -78,6 +80,7 @@ export default function FloorPlanCanvas({
   const [drawMode, setDrawMode] = useState(false);
   const [drawState, setDrawState] = useState<DrawState | null>(null);
   const [measureMode, setMeasureMode] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
   const [measurePoints, setMeasurePoints] = useState<MeasurementPoint[]>([]);
 
   const focusedRoom = useMemo(
@@ -374,21 +377,23 @@ export default function FloorPlanCanvas({
               >
                 {room.name}
               </text>
-              <text
-                x={rx + rw / 2}
-                y={ry + rh / 2 + 10}
-                textAnchor="middle"
-                fill="#facc15"
-                fontSize={Math.max(8, Math.min(11, rw / 10))}
-                fontFamily="'Space Mono', monospace"
-                style={{ pointerEvents: "none", userSelect: "none" }}
-              >
-                {formatFeetInches(room.width)} × {formatFeetInches(room.height)}
-              </text>
+              {showLabels && (
+                <text
+                  x={rx + rw / 2}
+                  y={ry + rh / 2 + 10}
+                  textAnchor="middle"
+                  fill="#facc15"
+                  fontSize={Math.max(8, Math.min(11, rw / 10))}
+                  fontFamily="'Space Mono', monospace"
+                  style={{ pointerEvents: "none", userSelect: "none" }}
+                >
+                  {formatFeetInches(room.width)} × {formatFeetInches(room.height)}
+                </text>
+              )}
             </>
           )}
           {/* Dimension lines */}
-          {!isHidden && scale >= 16 && (
+          {!isHidden && scale >= 16 && showLabels && (
             <>
               <line x1={rx} y1={ry - 12} x2={rx + rw} y2={ry - 12} stroke="#facc15" strokeWidth={1} />
               <line x1={rx} y1={ry - 16} x2={rx} y2={ry - 8} stroke="#facc15" strokeWidth={1} />
@@ -491,7 +496,7 @@ export default function FloorPlanCanvas({
               {item.name}
             </text>
           )}
-          {isSelected && fw > 40 && (
+          {showLabels && fw > 40 && (
             <text
               x={cx}
               y={feetToPx(item.y, scale) + fh + 14}
