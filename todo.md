@@ -30,9 +30,9 @@
 - [x] Share management UI in toolbar
 
 ## Mobile Responsiveness
-- [ ] Viewport adjustments for mobile screens
-- [ ] Responsive layout toggles
-- [ ] Mobile-friendly toolbar and menus
+- [x] Viewport adjustments for mobile screens
+- [x] Responsive layout toggles (drawer overlay pattern)
+- [x] Mobile-friendly toolbar with menu button
 - [ ] Touch-friendly canvas interactions
 
 ## Notifications System

@@ -54,7 +54,21 @@ export default function Home() {
   const [draggedFurniture, setDraggedFurniture] = useState<FurnitureTemplate | null>(null);
   const [showCustomDialog, setShowCustomDialog] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
+  const [showMobilePanel, setShowMobilePanel] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+
+  // Detect mobile screen size
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setShowMobilePanel(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Load user's floor plans from database
   const { data: dbPlans = [] } = trpc.floorPlans.list.useQuery(undefined, {
@@ -315,26 +329,64 @@ export default function Home() {
         canvasElement={canvasContainerRef.current}
         showLabels={showLabels}
         onToggleLabels={setShowLabels}
+        isMobile={isMobile}
+        onToggleMobilePanel={() => setShowMobilePanel(!showMobilePanel)}
       />
 
       {/* Main content */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Left panel */}
-        <LeftPanel
-          plan={activePlan}
-          allFurniture={allFurniture}
-          favorites={favorites}
-          focusedRoomId={focusedRoomId}
-          onPlanChange={handlePlanChange}
-          onFocusRoom={handleFocusRoom}
-          onDragFurniture={handleDragFurniture}
-          onAddCustomFurniture={() => setShowCustomDialog(true)}
-          onDeleteCustomFurniture={handleDeleteCustomFurniture}
-          onToggleFavorite={handleToggleFavorite}
-        />
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+        {/* Left panel - hidden on mobile, shown as overlay */}
+        <div
+          style={{
+            display: isMobile && !showMobilePanel ? "none" : "flex",
+            flexDirection: "column",
+            width: isMobile ? "100%" : "280px",
+            position: isMobile ? "absolute" : "relative",
+            height: "100%",
+            zIndex: isMobile ? 50 : 1,
+            background: "var(--bp-navy)",
+            boxShadow: isMobile ? "0 0 20px rgba(0,0,0,0.5)" : "none",
+          }}
+        >
+          <LeftPanel
+            plan={activePlan}
+            allFurniture={allFurniture}
+            favorites={favorites}
+            focusedRoomId={focusedRoomId}
+            onPlanChange={handlePlanChange}
+            onFocusRoom={handleFocusRoom}
+            onDragFurniture={handleDragFurniture}
+            onAddCustomFurniture={() => setShowCustomDialog(true)}
+            onDeleteCustomFurniture={handleDeleteCustomFurniture}
+            onToggleFavorite={handleToggleFavorite}
+          />
+        </div>
+
+        {/* Mobile overlay backdrop */}
+        {isMobile && showMobilePanel && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 40,
+            }}
+            onClick={() => setShowMobilePanel(false)}
+          />
+        )}
 
         {/* Canvas */}
-        <div ref={canvasContainerRef} style={{ flex: 1, overflow: "hidden" }}>
+        <div
+          ref={canvasContainerRef}
+          style={{
+            flex: 1,
+            overflow: "hidden",
+            display: isMobile && showMobilePanel ? "none" : "flex",
+          }}
+        >
           <FloorPlanCanvas
             plan={activePlan}
             focusedRoomId={focusedRoomId}

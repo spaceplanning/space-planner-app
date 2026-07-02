@@ -40,6 +40,8 @@ interface Props {
   onRedo?: () => void;
   showLabels?: boolean;
   onToggleLabels?: (show: boolean) => void;
+  isMobile?: boolean;
+  onToggleMobilePanel?: () => void;
 }
 
 export default function TopToolbar({
@@ -60,6 +62,8 @@ export default function TopToolbar({
   onRedo,
   showLabels = true,
   onToggleLabels,
+  isMobile = false,
+  onToggleMobilePanel,
 }: Props) {
   const [showPlansMenu, setShowPlansMenu] = useState(false);
   const [showRoomMenu, setShowRoomMenu] = useState(false);
@@ -114,6 +118,18 @@ export default function TopToolbar({
           zIndex: 100,
         }}
       >
+        {/* Mobile menu button */}
+        {isMobile && (
+          <button
+            className="bp-btn"
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px" }}
+            onClick={onToggleMobilePanel}
+            title="Toggle furniture panel"
+          >
+            <Menu size={14} />
+          </button>
+        )}
+
         {/* Plan selector */}
         <div style={{ position: "relative" }}>
           <button
