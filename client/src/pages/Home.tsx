@@ -28,6 +28,7 @@ import LeftPanel from "@/components/LeftPanel";
 import TopToolbar from "@/components/TopToolbar";
 import CustomFurnitureDialog from "@/components/CustomFurnitureDialog";
 import { trpc } from "@/lib/trpc";
+import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 function createEmptyPlan(name: string = "New Plan"): FloorPlan {
   return {
@@ -167,6 +168,7 @@ export default function Home() {
     setPlans((prev) => [...prev, newPlan]);
     setActivePlanId(newPlan.id);
     setFocusedRoomId(null);
+    notifySuccess(`Created new plan: ${newPlan.name}`);
   }, [plans.length]);
 
   const handleDeletePlan = useCallback(
@@ -178,6 +180,7 @@ export default function Home() {
         setActivePlanId(remaining[0].id);
         setFocusedRoomId(null);
       }
+      notifySuccess("Plan deleted");
     },
     [plans, activePlanId]
   );
@@ -201,18 +204,26 @@ export default function Home() {
 
   const handleAddCustomFurniture = useCallback((item: FurnitureTemplate) => {
     setCustomFurniture((prev) => [...prev, item]);
+    notifySuccess(`Added custom furniture: ${item.name}`);
   }, []);
 
   const handleDeleteCustomFurniture = useCallback((id: string) => {
     setCustomFurniture((prev) => prev.filter((f) => f.id !== id));
+    notifySuccess("Custom furniture deleted");
   }, []);
 
   const handleToggleFavorite = useCallback((furnitureId: string) => {
-    setFavorites((prev) =>
-      prev.includes(furnitureId)
+    setFavorites((prev) => {
+      const isFavorited = prev.includes(furnitureId);
+      if (isFavorited) {
+        notifyInfo("Removed from favorites");
+      } else {
+        notifySuccess("Added to favorites");
+      }
+      return isFavorited
         ? prev.filter((id) => id !== furnitureId)
-        : [...prev, furnitureId]
-    );
+        : [...prev, furnitureId];
+    });
   }, []);
 
   const allFurniture = [...DEFAULT_FURNITURE, ...customFurniture];

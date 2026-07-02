@@ -5,6 +5,7 @@
 
 import React, { useState } from "react";
 import {
+  Menu,
   Save,
   FolderOpen,
   Plus,
@@ -19,7 +20,7 @@ import {
 import { FloorPlan, formatFeetInches, parseFeetInches, generateId } from "@/lib/floorPlanTypes";
 import ExportDialog from "./ExportDialog";
 import ShareDialog from "./ShareDialog";
-import { toast } from "sonner";
+import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 interface Props {
   plan: FloorPlan;
@@ -76,11 +77,11 @@ export default function TopToolbar({
     const w = parseFeetInches(editWidth);
     const h = parseFeetInches(editHeight);
     if (w === null || h === null || w <= 0 || h <= 0) {
-      toast.error("Invalid dimensions. Use format like 30 or 30'6\"");
+      notifyError("Invalid dimensions. Use format like 30 or 30'6\"");
       return;
     }
     onPlanChange({ ...plan, totalWidth: w, totalHeight: h, updatedAt: Date.now() });
-    toast.success("Dimensions updated");
+    notifySuccess("Dimensions updated");
     setShowDimensions(false);
   };
 
