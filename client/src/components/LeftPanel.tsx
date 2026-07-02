@@ -32,7 +32,7 @@ import { parseFloorPlanImage, ParseProgress } from "@/lib/imageParsing";
 import { FURNITURE_SYMBOLS } from "@/lib/furnitureSymbols";
 import FurnitureCustomizeDialog from "./FurnitureCustomizeDialog";
 import FavoritesSection from "./FavoritesSection";
-import { toast } from "sonner";
+import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 interface Props {
   plan: FloorPlan;
@@ -84,11 +84,11 @@ export default function LeftPanel({
     async (file: File) => {
       const allowed = ["image/png", "image/jpeg", "image/jpg", "application/pdf"];
       if (!allowed.includes(file.type)) {
-        toast.error("Unsupported file type. Please upload PNG, JPEG, or PDF.");
+        notifyError("Unsupported file type. Please upload PNG, JPEG, or PDF.");
         return;
       }
       if (file.size > 20 * 1024 * 1024) {
-        toast.error("File too large. Maximum 20MB.");
+        notifyError("File too large. Maximum 20MB.");
         return;
       }
 
@@ -105,11 +105,11 @@ export default function LeftPanel({
           updatedAt: Date.now(),
         };
         onPlanChange(newPlan);
-        toast.success(`Floor plan parsed: ${result.rooms.length} rooms detected`);
+        notifySuccess(`Floor plan parsed: ${result.rooms.length} rooms detected`);
         setTimeout(() => setParseProgress(null), 2000);
       } catch (err) {
         setParseProgress({ stage: "error", message: (err as Error).message, progress: 0 });
-        toast.error((err as Error).message);
+        notifyError((err as Error).message);
         setTimeout(() => setParseProgress(null), 4000);
       }
     },
@@ -132,7 +132,7 @@ export default function LeftPanel({
   const loadPreviousPlan = () => {
     // This will be handled by the parent component through a prop
     // For now, we'll just show a message
-    toast.info("Select a plan from the Plans menu in the top toolbar");
+    notifyInfo("Select a plan from the Plans menu in the top toolbar");
   };
 
   const filteredFurniture = allFurniture.filter((f) =>

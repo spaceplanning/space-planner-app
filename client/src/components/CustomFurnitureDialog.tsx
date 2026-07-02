@@ -8,7 +8,7 @@ import { X, Plus } from "lucide-react";
 import { FurnitureTemplate, FurnitureCategory, FURNITURE_CATEGORIES } from "@/lib/furnitureData";
 import { generateId } from "@/lib/floorPlanTypes";
 import { parseFeetInches } from "@/lib/floorPlanTypes";
-import { toast } from "sonner";
+import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 interface Props {
   onSave: (item: FurnitureTemplate) => void;
@@ -46,7 +46,7 @@ export default function CustomFurnitureDialog({ onSave, onClose }: Props) {
       isCustom: true,
     };
     onSave(item);
-    toast.success(`"${item.name}" saved to your profile`);
+    notifySuccess(`"${item.name}" saved to your profile`);
     onClose();
   };
 

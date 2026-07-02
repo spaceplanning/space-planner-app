@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { X, Check } from "lucide-react";
 import { Room, parseFeetInches, formatFeetInches } from "@/lib/floorPlanTypes";
-import { toast } from "sonner";
+import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 interface Props {
   room: Room;
@@ -28,11 +28,11 @@ export default function RoomEditorDialog({ room, onSave, onDelete, onClose }: Pr
     const w = parseFeetInches(wStr);
     const h = parseFeetInches(hStr);
     if (x === null || y === null || w === null || h === null || w <= 0 || h <= 0) {
-      toast.error("Invalid dimensions");
+      notifyError("Invalid dimensions");
       return;
     }
     onSave({ ...room, name: name.trim().toUpperCase() || room.name, x, y, width: w, height: h });
-    toast.success("Room updated");
+    notifySuccess("Room updated");
     onClose();
   };
 

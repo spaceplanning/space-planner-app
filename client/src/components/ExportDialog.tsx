@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { X, Download, Loader2 } from "lucide-react";
 import { FloorPlan } from "@/lib/floorPlanTypes";
 import { exportFloorPlan } from "@/lib/exportUtils";
-import { toast } from "sonner";
+import { notifySuccess, notifyError, notifyLoading } from "@/lib/notifications";
 
 interface Props {
   plan: FloorPlan;
@@ -29,21 +29,22 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
 
   const handleExport = async () => {
     if (!canvasElement) {
-      toast.error("Canvas not ready");
+      notifyError("Canvas not ready");
       return;
     }
 
     setIsExporting(true);
+    const loadingId = notifyLoading(`Exporting as ${format.toUpperCase()}...`);
     try {
       await exportFloorPlan(canvasElement, plan, {
         format,
         scale: quality,
         includeMetadata,
       });
-      toast.success(`Floor plan exported as ${format.toUpperCase()}`);
+      notifySuccess(`Floor plan exported as ${format.toUpperCase()}`);
       onClose();
     } catch (err) {
-      toast.error((err as Error).message);
+      notifyError((err as Error).message || "Export failed");
     } finally {
       setIsExporting(false);
     }

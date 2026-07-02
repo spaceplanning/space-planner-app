@@ -6,7 +6,7 @@
 import React, { useState } from "react";
 import { X, Copy } from "lucide-react";
 import { FurnitureTemplate, createCustomFurniture } from "@/lib/furnitureData";
-import { toast } from "sonner";
+import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 interface Props {
   furniture: FurnitureTemplate;
@@ -21,7 +21,7 @@ export default function FurnitureCustomizeDialog({ furniture, onSave, onClose }:
 
   const handleSave = () => {
     if (!customName.trim()) {
-      toast.error("Please enter a name");
+      notifyError("Please enter a name");
       return;
     }
 
@@ -29,13 +29,13 @@ export default function FurnitureCustomizeDialog({ furniture, onSave, onClose }:
     const d = parseFloat(customDepth);
 
     if (isNaN(w) || isNaN(d) || w <= 0 || d <= 0) {
-      toast.error("Dimensions must be positive numbers");
+      notifyError("Dimensions must be positive numbers");
       return;
     }
 
     const custom = createCustomFurniture(furniture, customName.trim(), w, d);
     onSave(custom);
-    toast.success(`Created custom furniture: ${customName}`);
+    notifySuccess(`Created custom furniture: ${customName}`);
     onClose();
   };
 

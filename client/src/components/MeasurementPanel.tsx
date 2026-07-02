@@ -12,7 +12,7 @@ import {
   formatMeasurement,
   MeasurementResult,
 } from "@/lib/measurementUtils";
-import { toast } from "sonner";
+import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 interface Props {
   points: Array<{ x: number; y: number }>;
@@ -60,7 +60,7 @@ export default function MeasurementPanel({ points, onClear, onUndo, onClose }: P
       text = `Area: ${result.value.toFixed(1)} sq ft\nPerimeter: ${formatMeasurement(result.perimeter || 0)}`;
     }
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
+    notifySuccess("Copied to clipboard");
   };
 
   return (

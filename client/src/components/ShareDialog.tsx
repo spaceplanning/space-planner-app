@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
+import { notifySuccess, notifyError, notifyLoading, dismissNotification } from "@/lib/notifications";
 
 interface ShareDialogProps {
   floorPlanId: string;
@@ -24,6 +24,7 @@ export default function ShareDialog({
   );
 
   const handleCreateShare = async () => {
+    const loadingId = notifyLoading("Creating share link...");
     try {
       const result = await createShareMutation.mutateAsync({
         floorPlanId,
@@ -34,27 +35,32 @@ export default function ShareDialog({
       if (result && result.shareToken) {
         const link = `${window.location.origin}/shared/${result.shareToken}`;
         setShareLink(link);
-        toast.success("Share link created!");
+        dismissNotification(loadingId);
+        notifySuccess("Share link created!");
       }
     } catch (error) {
-      toast.error("Failed to create share link");
+      dismissNotification(loadingId);
+      notifyError("Failed to create share link");
     }
   };
 
   const handleCopyLink = () => {
     if (shareLink) {
       navigator.clipboard.writeText(shareLink);
-      toast.success("Link copied to clipboard!");
+      notifySuccess("Link copied to clipboard!");
     }
   };
 
   const deleteShareMutation = trpc.sharing.deleteShare.useMutation();
   const handleDeleteShare = async (shareId: string) => {
+    const loadingId = notifyLoading("Deleting share link...");
     try {
       await deleteShareMutation.mutateAsync({ shareId });
-      toast.success("Share link deleted");
+      dismissNotification(loadingId);
+      notifySuccess("Share link deleted");
     } catch (error) {
-      toast.error("Failed to delete share link");
+      dismissNotification(loadingId);
+      notifyError("Failed to delete share link");
     }
   };
 
