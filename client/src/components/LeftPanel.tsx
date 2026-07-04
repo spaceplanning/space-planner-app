@@ -104,6 +104,7 @@ export default function LeftPanel({
           totalWidth: result.totalWidth,
           totalHeight: result.totalHeight,
           rooms: result.rooms,
+          perimeter: result.perimeter,
           updatedAt: Date.now(),
         };
         onPlanChange(newPlan);

@@ -3,12 +3,14 @@
 // Uses server-side tRPC procedure for AI vision parsing (fixes 401 auth issue)
 // ============================================================
 
-import { Room, generateId } from "./floorPlanTypes";
+import { Room, Point, generateId } from "./floorPlanTypes";
 
 export interface ParsedFloorPlan {
   rooms: Room[];
   totalWidth: number;
   totalHeight: number;
+  perimeter?: Point[];
+  totalSquareFeet?: number;
   rawText: string;
 }
 
@@ -105,6 +107,8 @@ export async function parseFloorPlanImage(
   let parsed: {
     totalWidth: number;
     totalHeight: number;
+    totalSquareFeet?: number;
+    perimeter?: Array<{ x: number; y: number }>;
     rooms: Array<{
       name: string;
       widthFt: number;
@@ -145,6 +149,8 @@ export async function parseFloorPlanImage(
     rooms,
     totalWidth,
     totalHeight,
+    perimeter: parsed.perimeter,
+    totalSquareFeet: parsed.totalSquareFeet,
     rawText: JSON.stringify(parsed),
   };
 }

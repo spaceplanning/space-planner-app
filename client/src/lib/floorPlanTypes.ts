@@ -32,6 +32,11 @@ export interface PlacedFurniture {
   furnitureType?: string; // SVG symbol type (e.g., 'bed_queen', 'sofa_3seat')
 }
 
+export interface Point {
+  x: number;
+  y: number;
+}
+
 export interface FloorPlan {
   id: string;
   name: string;
@@ -39,6 +44,7 @@ export interface FloorPlan {
   totalHeight: number; // in feet
   rooms: Room[];
   furniture: PlacedFurniture[];
+  perimeter?: Point[];  // Building boundary polygon (outer walls)
   createdAt: number;
   updatedAt: number;
 }
