@@ -412,6 +412,14 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error("[invokeLLM] Request failed:");
+    console.error("  Status:", response.status, response.statusText);
+    console.error("  URL:", resolveApiUrl());
+    console.error("  Headers:", {
+      "content-type": "application/json",
+      "authorization": `Bearer ${ENV.forgeApiKey?.substring(0, 10)}...`,
+    });
+    console.error("  Response:", errorText.substring(0, 500));
     throw new Error(
       `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
     );
