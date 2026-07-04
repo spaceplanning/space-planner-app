@@ -405,11 +405,15 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
+  const authHeader = `Bearer ${ENV.forgeApiKey}`;
+  console.error("[invokeLLM] Auth header first 30 chars:", authHeader.substring(0, 30));
+  console.error("[invokeLLM] Auth header length:", authHeader.length);
+  
   const response = await fetchWithBackoff(resolveApiUrl(), {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: authHeader,
     },
     body: JSON.stringify(payload),
   });
