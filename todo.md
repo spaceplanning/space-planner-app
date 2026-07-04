@@ -67,3 +67,6 @@
 - [ ] Optimize canvas rendering for large plans
 - [ ] Add analytics tracking
 - [ ] Performance monitoring
+
+## Bug Fixes
+- [x] Floor plan upload vision analysis (401 error - moved to server-side tRPC procedure)

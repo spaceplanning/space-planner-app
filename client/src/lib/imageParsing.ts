@@ -1,7 +1,6 @@
-// ============================================================
 // SPACE PLANNER STUDIO — Image Parsing Engine
 // Blueprint Dark Theme
-// Uses VITE_FRONTEND_FORGE_API_KEY for AI vision parsing
+// Uses server-side tRPC procedure for AI vision parsing (fixes 401 auth issue)
 // ============================================================
 
 import { Room, generateId } from "./floorPlanTypes";
@@ -69,9 +68,24 @@ function getRoomColor(name: string): string {
   return ROOM_COLORS_MAP.DEFAULT;
 }
 
+/**
+ * Parse a floor plan image using server-side vision AI
+ * Requires a mutation function from useParseFloorPlan hook
+ */
 export async function parseFloorPlanImage(
   file: File,
-  onProgress: (p: ParseProgress) => void
+  onProgress: (p: ParseProgress) => void,
+  mutate: (input: { base64: string; fileType: string }) => Promise<{
+    totalWidth: number;
+    totalHeight: number;
+    rooms: Array<{
+      name: string;
+      widthFt: number;
+      heightFt: number;
+      xFt: number;
+      yFt: number;
+    }>;
+  }>
 ): Promise<ParsedFloorPlan> {
   onProgress({ stage: "uploading", message: "Reading image file...", progress: 10 });
 
@@ -88,87 +102,6 @@ export async function parseFloorPlanImage(
 
   onProgress({ stage: "analyzing", message: "AI scanning for rooms and dimensions...", progress: 30 });
 
-  const apiKey = import.meta.env.VITE_FRONTEND_FORGE_API_KEY;
-  const apiUrl = import.meta.env.VITE_FRONTEND_FORGE_API_URL;
-
-  if (!apiKey || !apiUrl) {
-    throw new Error("AI vision API not configured.");
-  }
-
-  const prompt = `You are an expert architectural floor plan analyzer. Analyze this floor plan image and extract:
-
-1. All rooms with their names and dimensions (width x depth in feet)
-2. The overall floor plan dimensions (total width x total height in feet)
-
-Return ONLY valid JSON in this exact format, no other text:
-{
-  "totalWidth": <number in feet>,
-  "totalHeight": <number in feet>,
-  "rooms": [
-    {
-      "name": "<ROOM NAME in uppercase>",
-      "widthFt": <number>,
-      "heightFt": <number>,
-      "xFt": <estimated x position from left in feet>,
-      "yFt": <estimated y position from top in feet>
-    }
-  ]
-}
-
-Rules:
-- Room names should be uppercase (e.g., "BEDROOM", "LIVING ROOM", "KITCHEN", "BATHROOM")
-- All dimensions in decimal feet (e.g., 12.5 for 12'6")
-- Estimate x/y positions based on the room's position in the layout
-- If you cannot determine exact dimensions, make reasonable estimates based on standard room sizes
-- Include ALL visible rooms, hallways, closets, bathrooms
-- totalWidth and totalHeight should encompass the entire floor plan`;
-
-  let responseText = "";
-  try {
-    const response = await fetch(`${apiUrl}/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${file.type === "application/pdf" ? "image/jpeg" : file.type};base64,${base64}`,
-                  detail: "high",
-                },
-              },
-              {
-                type: "text",
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        max_tokens: 2000,
-        temperature: 0.1,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    responseText = data.choices?.[0]?.message?.content || "";
-  } catch (e) {
-    throw new Error(`Vision analysis failed: ${(e as Error).message}`);
-  }
-
-  onProgress({ stage: "generating", message: "Generating digital floor plan...", progress: 70 });
-
-  // Parse the JSON response
   let parsed: {
     totalWidth: number;
     totalHeight: number;
@@ -182,13 +115,15 @@ Rules:
   };
 
   try {
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found in response");
-    parsed = JSON.parse(jsonMatch[0]);
+    parsed = await mutate({
+      base64,
+      fileType: file.type,
+    });
   } catch (e) {
-    throw new Error("Failed to parse AI response. Please try manual entry.");
+    throw new Error(`Vision analysis failed: ${(e as Error).message}`);
   }
+
+  onProgress({ stage: "generating", message: "Generating digital floor plan...", progress: 70 });
 
   // Validate and normalize
   const totalWidth = Math.max(parsed.totalWidth || 30, 10);
@@ -210,7 +145,7 @@ Rules:
     rooms,
     totalWidth,
     totalHeight,
-    rawText: responseText,
+    rawText: JSON.stringify(parsed),
   };
 }
 
@@ -218,19 +153,15 @@ Rules:
 export function generateDemoFloorPlan(): ParsedFloorPlan {
   const rooms: Room[] = [
     { id: generateId(), name: "LIVING ROOM", x: 0, y: 0, width: 16, height: 14, color: "#1a3d2e" },
-    { id: generateId(), name: "KITCHEN", x: 16, y: 0, width: 12, height: 10, color: "#3d1e1e" },
-    { id: generateId(), name: "DINING ROOM", x: 16, y: 10, width: 12, height: 8, color: "#3d2e1a" },
-    { id: generateId(), name: "BEDROOM 1", x: 0, y: 14, width: 14, height: 12, color: "#1e3a5f" },
-    { id: generateId(), name: "BEDROOM 2", x: 14, y: 14, width: 12, height: 12, color: "#1e3a5f" },
-    { id: generateId(), name: "BATHROOM", x: 0, y: 26, width: 8, height: 8, color: "#2a1e3d" },
-    { id: generateId(), name: "HALLWAY", x: 8, y: 26, width: 6, height: 8, color: "#2a2a2a" },
-    { id: generateId(), name: "CLOSET", x: 14, y: 26, width: 4, height: 4, color: "#1e1e2a" },
+    { id: generateId(), name: "KITCHEN", x: 16, y: 0, width: 12, height: 14, color: "#3d1e1e" },
+    { id: generateId(), name: "BEDROOM", x: 0, y: 14, width: 12, height: 12, color: "#1e3a5f" },
+    { id: generateId(), name: "BATHROOM", x: 12, y: 14, width: 8, height: 12, color: "#2a1e3d" },
   ];
 
   return {
     rooms,
     totalWidth: 28,
-    totalHeight: 34,
+    totalHeight: 26,
     rawText: "Demo floor plan",
   };
 }

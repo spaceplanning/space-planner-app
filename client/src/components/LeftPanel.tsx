@@ -29,6 +29,7 @@ import {
   CATEGORY_COLORS,
 } from "@/lib/furnitureData";
 import { parseFloorPlanImage, ParseProgress } from "@/lib/imageParsing";
+import { useParseFloorPlan } from "@/lib/useParseFloorPlan";
 import { FURNITURE_SYMBOLS } from "@/lib/furnitureSymbols";
 import FurnitureCustomizeDialog from "./FurnitureCustomizeDialog";
 import FavoritesSection from "./FavoritesSection";
@@ -62,6 +63,7 @@ export default function LeftPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [parseProgress, setParseProgress] = useState<ParseProgress | null>(null);
+  const parseFloorPlanMutation = useParseFloorPlan();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     upload: true,
     rooms: true,
@@ -95,7 +97,7 @@ export default function LeftPanel({
       try {
         const result = await parseFloorPlanImage(file, (progress) => {
           setParseProgress(progress);
-        });
+        }, (input) => parseFloorPlanMutation.mutateAsync(input));
 
         const newPlan: FloorPlan = {
           ...plan,
@@ -113,7 +115,7 @@ export default function LeftPanel({
         setTimeout(() => setParseProgress(null), 4000);
       }
     },
-    [plan, onPlanChange]
+    [plan, onPlanChange, parseFloorPlanMutation]
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {

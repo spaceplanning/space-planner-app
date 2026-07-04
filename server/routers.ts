@@ -136,6 +136,81 @@ export const appRouter = router({
         db.getShareByToken(input.token)
       ),
   }),
+
+  // Floor plan image parsing via vision AI
+  parseFloorPlan: protectedProcedure
+    .input(z.object({
+      base64: z.string(),
+      fileType: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const { invokeLLM } = await import("./_core/llm");
+
+      const prompt = `You are an expert architectural floor plan analyzer. Analyze this floor plan image and extract:
+
+1. All rooms with their names and dimensions (width x depth in feet)
+2. The overall floor plan dimensions (total width x total height in feet)
+
+Return ONLY valid JSON in this exact format, no other text:
+{
+  "totalWidth": <number in feet>,
+  "totalHeight": <number in feet>,
+  "rooms": [
+    {
+      "name": "<ROOM NAME in uppercase>",
+      "widthFt": <number>,
+      "heightFt": <number>,
+      "xFt": <estimated x position from left in feet>,
+      "yFt": <estimated y position from top in feet>
+    }
+  ]
+}
+
+Rules:
+- Room names should be uppercase (e.g., "BEDROOM", "LIVING ROOM", "KITCHEN", "BATHROOM")
+- All dimensions in decimal feet (e.g., 12.5 for 12'6")
+- Estimate x/y positions based on the room's position in the layout
+- If you cannot determine exact dimensions, make reasonable estimates based on standard room sizes
+- Include ALL visible rooms, hallways, closets, bathrooms
+- totalWidth and totalHeight should encompass the entire floor plan`;
+
+      try {
+        const response = await invokeLLM({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${input.fileType === "application/pdf" ? "image/jpeg" : input.fileType};base64,${input.base64}`,
+                    detail: "high",
+                  },
+                },
+                {
+                  type: "text",
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+          max_tokens: 2000,
+        });
+
+        const content = response.choices?.[0]?.message?.content;
+        const responseText = typeof content === "string" ? content : "";
+
+        // Extract JSON from response
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON found in response");
+
+        const parsed = JSON.parse(jsonMatch[0]);
+        return parsed;
+      } catch (error) {
+        throw new Error(`Vision analysis failed: ${(error as Error).message}`);
+      }
+    }),
 });
 
 export type AppRouter = typeof appRouter;
