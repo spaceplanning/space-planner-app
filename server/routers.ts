@@ -207,8 +207,8 @@ Rules:
         } else if (Array.isArray(content)) {
           // Extract text from content array
           for (const item of content) {
-            if (item.type === "text" && "text" in item) {
-              responseText = item.text;
+            if ((item as any).type === "text" && "text" in item) {
+              responseText = (item as any).text;
               break;
             }
           }
@@ -216,14 +216,18 @@ Rules:
 
         if (!responseText) throw new Error("No text content in response");
 
-        // Extract JSON from response
+        // Extract JSON from response - greedy match to get the largest JSON object
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("No JSON found in response");
+        if (!jsonMatch) {
+          throw new Error("No JSON found in response");
+        }
 
         const parsed = JSON.parse(jsonMatch[0]);
         return parsed;
       } catch (error) {
-        throw new Error(`Vision analysis failed: ${(error as Error).message}`);
+        const errorMsg = (error as Error).message;
+        console.error("[parseFloorPlan] Error:", errorMsg);
+        throw new Error(`Vision analysis failed: ${errorMsg}`);
       }
     }),
 });
