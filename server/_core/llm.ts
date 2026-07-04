@@ -340,6 +340,10 @@ const fetchWithBackoff = async (
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
+  console.error("[invokeLLM] Checking API key...");
+  console.error("[invokeLLM] ENV.forgeApiKey exists:", !!ENV.forgeApiKey);
+  console.error("[invokeLLM] ENV.forgeApiKey length:", ENV.forgeApiKey?.length);
+  console.error("[invokeLLM] ENV.forgeApiUrl:", ENV.forgeApiUrl);
   assertApiKey();
 
   const {
