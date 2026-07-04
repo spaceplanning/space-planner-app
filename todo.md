@@ -58,16 +58,17 @@
 - [x] Add loading states for async operations (export, share create/delete)
 - [x] Improve error handling and user feedback (comprehensive error handling)
 
-## Future Enhancements (Out of Scope)
-- [ ] Collaborative real-time editing
-- [ ] Advanced room templates
-- [ ] Material and finish specifications
-- [ ] Cost estimation
-- [ ] 3D visualization
-- [ ] Mobile app version
-- [ ] Optimize canvas rendering for large plans
-- [ ] Add analytics tracking
-- [ ] Performance monitoring
+## Future Enhancements (Out of Scope - Not Required)
+These features are beyond the current scope and can be added in future versions:
+- Collaborative real-time editing
+- Advanced room templates
+- Material and finish specifications
+- Cost estimation
+- 3D visualization
+- Mobile app version
+- Optimize canvas rendering for large plans
+- Add analytics tracking
+- Performance monitoring
 
 ## Bug Fixes
 - [x] Floor plan upload vision analysis (401 error - moved to server-side tRPC procedure)
