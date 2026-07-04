@@ -199,7 +199,22 @@ Rules:
         });
 
         const content = response.choices?.[0]?.message?.content;
-        const responseText = typeof content === "string" ? content : "";
+        let responseText = "";
+        
+        // Handle both string and array content types
+        if (typeof content === "string") {
+          responseText = content;
+        } else if (Array.isArray(content)) {
+          // Extract text from content array
+          for (const item of content) {
+            if (item.type === "text" && "text" in item) {
+              responseText = item.text;
+              break;
+            }
+          }
+        }
+
+        if (!responseText) throw new Error("No text content in response");
 
         // Extract JSON from response
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
