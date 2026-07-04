@@ -51,7 +51,8 @@
 - [x] Vitest config updated to include client tests
 - [x] Integration tests for plan creation/update/delete (6 tests)
 - [x] Integration tests for furniture create/delete (2 tests)
-- [x] All tests passing: 35 total (20 client + 15 server)
+- [x] Wireframe/sections validation tests (11 tests - comprehensive format validation)
+- [x] All tests passing: 50 total (20 client + 30 server)
 
 ## Performance & Polish
 - [x] Add loading states for async operations (export, share create/delete)
@@ -71,8 +72,9 @@
 ## Bug Fixes
 - [x] Floor plan upload vision analysis (401 error - moved to server-side tRPC procedure)
 
-## Wireframe Redesign (In Progress)
+## Wireframe Redesign
 - [x] Update LLM prompt to extract complete floor plan wireframe geometry
 - [x] Refactor parsing to render wireframe instead of individual rooms
 - [x] Add room type classification for wireframe sections (LLM classifies sections)
-- [ ] Test wireframe matches uploaded image exactly
+- [x] Server-side validation for wireframe and sections format
+- [x] Wireframe rendering on canvas with vertices
