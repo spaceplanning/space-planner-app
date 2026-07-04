@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { nanoid } from "nanoid";
+import { convertPdfToImage } from "./pdfToImage";
 
 export const appRouter = router({
   system: systemRouter,
@@ -145,6 +146,22 @@ export const appRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { invokeLLM } = await import("./_core/llm");
+      
+      // Convert PDF to image if needed
+      let imageBase64 = input.base64;
+      let imageType = input.fileType;
+      
+      if (input.fileType === "application/pdf") {
+        console.error("[parseFloorPlan] Converting PDF to PNG...");
+        try {
+          imageBase64 = await convertPdfToImage(input.base64);
+          imageType = "image/png";
+          console.error("[parseFloorPlan] PDF conversion successful");
+        } catch (e) {
+          console.error("[parseFloorPlan] PDF conversion error:", (e as Error).message);
+          throw new Error(`PDF conversion failed: ${(e as Error).message}`);
+        }
+      }
 
       const prompt = `You are an expert architectural floor plan analyzer. Analyze this floor plan image and extract:
 
@@ -184,7 +201,7 @@ Rules:
                 {
                   type: "image_url",
                   image_url: {
-                    url: `data:${input.fileType === "application/pdf" ? "image/jpeg" : input.fileType};base64,${input.base64}`,
+                    url: `data:${imageType};base64,${imageBase64}`,
                     detail: "high",
                   },
                 },
