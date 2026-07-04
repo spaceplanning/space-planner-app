@@ -216,13 +216,39 @@ Rules:
 
         if (!responseText) throw new Error("No text content in response");
 
-        // Extract JSON from response - greedy match to get the largest JSON object
+        // Try to extract JSON with multiple strategies
+        let parsed = null;
+        
+        // Strategy 1: Look for JSON object
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          throw new Error("No JSON found in response");
+        if (jsonMatch) {
+          try {
+            parsed = JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            console.error("[parseFloorPlan] JSON parse failed for match:", jsonMatch[0].substring(0, 100));
+          }
         }
-
-        const parsed = JSON.parse(jsonMatch[0]);
+        
+        if (!parsed) {
+          // Strategy 2: Try to find JSON array and convert
+          const arrayMatch = responseText.match(/\[[\s\S]*\]/);
+          if (arrayMatch) {
+            try {
+              const arr = JSON.parse(arrayMatch[0]);
+              if (Array.isArray(arr) && arr.length > 0) {
+                parsed = arr[0];
+              }
+            } catch (e) {
+              console.error("[parseFloorPlan] JSON array parse failed");
+            }
+          }
+        }
+        
+        if (!parsed) {
+          console.error("[parseFloorPlan] Response text:", responseText.substring(0, 500));
+          throw new Error("No valid JSON found in response");
+        }
+        
         return parsed;
       } catch (error) {
         const errorMsg = (error as Error).message;
