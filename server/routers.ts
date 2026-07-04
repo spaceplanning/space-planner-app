@@ -168,12 +168,18 @@ export const appRouter = router({
 1. All rooms with their names and dimensions (width x depth in feet)
 2. The overall floor plan dimensions (total width x total height in feet)
 3. CRITICAL: Use OCR to find the total square footage text anywhere on the plan (e.g., "2,500 sq ft", "2500 SF", "Total: 2500")
+4. CRITICAL: Identify the external perimeter/boundary of the domicile - the outer walls that define the building footprint
 
 Return ONLY valid JSON in this exact format, no other text:
 {
   "totalWidth": <number in feet>,
   "totalHeight": <number in feet>,
   "totalSquareFeet": <number or null if not found>,
+  "perimeter": [
+    {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
+    {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
+    ...
+  ],
   "rooms": [
     {
       "name": "<ROOM NAME in uppercase>",
@@ -193,7 +199,8 @@ Rules:
 - Include ALL visible rooms, hallways, closets, bathrooms
 - totalWidth and totalHeight should encompass the entire floor plan
 - Use OCR to read ALL text on the plan including dimensions, room labels, and total square footage
-- If you find square footage, calculate the aspect ratio and adjust totalWidth/totalHeight to match the actual square footage`;
+- If you find square footage, calculate the aspect ratio and adjust totalWidth/totalHeight to match the actual square footage
+- Perimeter: Trace the outer boundary of the building. Start at top-left corner and go clockwise. Include all vertices where the boundary changes direction. For simple rectangular buildings, provide 4 corner points. For irregular shapes, provide all corner points.`;
 
       try {
         const response = await invokeLLM({
@@ -273,6 +280,49 @@ Rules:
         if (!parsed) {
           console.error("[parseFloorPlan] Response text:", responseText.substring(0, 500));
           throw new Error("No valid JSON found in response");
+        }
+        
+        // Validate that rooms fit within the square footage dimensions
+        if (parsed.totalSquareFeet && parsed.totalSquareFeet > 0) {
+          const calculatedArea = parsed.totalWidth * parsed.totalHeight;
+          const squareFeetArea = parsed.totalSquareFeet;
+          const tolerance = 0.2; // Allow 20% difference
+          
+          if (Math.abs(calculatedArea - squareFeetArea) / squareFeetArea > tolerance) {
+            console.warn(
+              `[parseFloorPlan] Area mismatch: calculated=${calculatedArea.toFixed(0)} sqft, ` +
+              `extracted=${squareFeetArea.toFixed(0)} sqft. Adjusting dimensions to match extracted sqft.`
+            );
+            
+            // Recalculate dimensions to match the extracted square footage
+            // Assume a reasonable aspect ratio (e.g., 1.5:1 for typical floor plans)
+            const aspectRatio = 1.5;
+            const newHeight = Math.sqrt(squareFeetArea / aspectRatio);
+            const newWidth = newHeight * aspectRatio;
+            
+            parsed.totalWidth = Math.round(newWidth * 10) / 10;
+            parsed.totalHeight = Math.round(newHeight * 10) / 10;
+            
+            console.error(
+              `[parseFloorPlan] Adjusted dimensions: width=${parsed.totalWidth}ft, height=${parsed.totalHeight}ft`
+            );
+          }
+        }
+        
+        // Validate that all rooms fit within the boundaries
+        if (parsed.rooms && Array.isArray(parsed.rooms)) {
+          for (const room of parsed.rooms) {
+            const roomRight = room.xFt + room.widthFt;
+            const roomBottom = room.yFt + room.heightFt;
+            
+            if (roomRight > parsed.totalWidth || roomBottom > parsed.totalHeight) {
+              console.warn(
+                `[parseFloorPlan] Room "${room.name}" extends beyond boundaries. ` +
+                `Room: (${room.xFt}, ${room.yFt}) to (${roomRight}, ${roomBottom}), ` +
+                `Boundaries: (0, 0) to (${parsed.totalWidth}, ${parsed.totalHeight})`
+              );
+            }
+          }
         }
         
         return parsed;
