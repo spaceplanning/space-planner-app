@@ -232,6 +232,11 @@ Rules:
         }
 
         if (!responseText) throw new Error("No text content in response");
+        
+        console.error("[parseFloorPlan] Response text length:", responseText.length);
+        console.error("[parseFloorPlan] Response first 500 chars:", responseText.substring(0, 500));
+        console.error("[parseFloorPlan] Response finish_reason:", response.choices?.[0]?.finish_reason);
+        console.error("[parseFloorPlan] Response usage:", response.usage);
 
         // Try to extract JSON with multiple strategies
         let parsed = null;
