@@ -70,3 +70,9 @@
 
 ## Bug Fixes
 - [x] Floor plan upload vision analysis (401 error - moved to server-side tRPC procedure)
+
+## Wireframe Redesign (In Progress)
+- [x] Update LLM prompt to extract complete floor plan wireframe geometry
+- [x] Refactor parsing to render wireframe instead of individual rooms
+- [x] Add room type classification for wireframe sections (LLM classifies sections)
+- [ ] Test wireframe matches uploaded image exactly

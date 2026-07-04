@@ -344,6 +344,33 @@ export default function FloorPlanCanvas({
   const totalWidthPx = feetToPx(plan.totalWidth, scale);
   const totalHeightPx = feetToPx(plan.totalHeight, scale);
 
+  // Render wireframe (complete floor plan geometry)
+  const renderWireframe = () => {
+    if (!plan.wireframe || plan.wireframe.length < 2) return null;
+    
+    const points = plan.wireframe
+      .map((p) => `${feetToPx(p.x, scale)},${feetToPx(p.y, scale)}`)
+      .join(" ");
+    
+    return (
+      <g key="wireframe">
+        {/* Wireframe polygon */}
+        <polyline points={points} fill="none" stroke="#06b6d4" strokeWidth={2.5} opacity={0.9} />
+        {/* Wireframe vertices */}
+        {plan.wireframe.map((p, i) => (
+          <circle
+            key={`wireframe-vertex-${i}`}
+            cx={feetToPx(p.x, scale)}
+            cy={feetToPx(p.y, scale)}
+            r={3}
+            fill="#06b6d4"
+            opacity={0.5}
+          />
+        ))}
+      </g>
+    );
+  };
+
   // Render perimeter (building boundary)
   const renderPerimeter = () => {
     if (!plan.perimeter || plan.perimeter.length < 2) return null;
@@ -675,6 +702,7 @@ export default function FloorPlanCanvas({
             width={totalWidthPx + 100}
             height={totalHeightPx + 100}
           >
+            {renderWireframe()}
             {renderPerimeter()}
             {renderRooms()}
             {renderFurniture()}

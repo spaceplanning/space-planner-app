@@ -104,6 +104,8 @@ export default function LeftPanel({
           totalWidth: result.totalWidth,
           totalHeight: result.totalHeight,
           rooms: result.rooms,
+          wireframe: result.wireframe,
+          sections: result.sections,
           perimeter: result.perimeter,
           updatedAt: Date.now(),
         };

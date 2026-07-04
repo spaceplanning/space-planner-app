@@ -37,6 +37,13 @@ export interface Point {
   y: number;
 }
 
+export interface WireframeSection {
+  id: string;
+  name: string;
+  boundary: Point[];
+  squareFeet?: number;
+}
+
 export interface FloorPlan {
   id: string;
   name: string;
@@ -44,6 +51,8 @@ export interface FloorPlan {
   totalHeight: number; // in feet
   rooms: Room[];
   furniture: PlacedFurniture[];
+  wireframe?: Point[];  // Complete floor plan wireframe
+  sections?: WireframeSection[];  // Classified room sections from wireframe
   perimeter?: Point[];  // Building boundary polygon (outer walls)
   createdAt: number;
   updatedAt: number;

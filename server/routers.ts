@@ -163,44 +163,47 @@ export const appRouter = router({
         }
       }
 
-      const prompt = `You are an expert architectural floor plan analyzer with OCR capabilities. Analyze this floor plan image and extract:
+      const prompt = `You are an expert architectural floor plan analyzer with OCR capabilities. Analyze this floor plan image and extract the COMPLETE WIREFRAME that exactly matches the uploaded document.
 
-1. All rooms with their names and dimensions (width x depth in feet)
-2. The overall floor plan dimensions (total width x total height in feet)
-3. CRITICAL: Use OCR to find the total square footage text anywhere on the plan (e.g., "2,500 sq ft", "2500 SF", "Total: 2500")
-4. CRITICAL: Identify the external perimeter/boundary of the domicile - the outer walls that define the building footprint
+Extract:
+1. COMPLETE WIREFRAME: Every wall, partition, and boundary line in the floor plan
+2. Use OCR to find the total square footage text anywhere on the plan
+3. Identify and label each enclosed space with its room type
+4. Preserve TRUE MEASUREMENTS from the floor plan document
 
 Return ONLY valid JSON in this exact format, no other text:
 {
   "totalWidth": <number in feet>,
   "totalHeight": <number in feet>,
   "totalSquareFeet": <number or null if not found>,
-  "perimeter": [
+  "wireframe": [
     {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
     {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
     ...
   ],
-  "rooms": [
+  "sections": [
     {
-      "name": "<ROOM NAME in uppercase>",
-      "widthFt": <number>,
-      "heightFt": <number>,
-      "xFt": <estimated x position from left in feet>,
-      "yFt": <estimated y position from top in feet>
+      "id": "section_1",
+      "name": "<ROOM TYPE: BEDROOM, KITCHEN, BATHROOM, LIVING ROOM, HALLWAY, CLOSET, LAUNDRY, ENTRY, etc.>",
+      "boundary": [
+        {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
+        {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
+        ...
+      ],
+      "squareFeet": <calculated or measured square footage of this section>
     }
   ]
 }
 
 Rules:
-- Room names should be uppercase (e.g., "BEDROOM", "LIVING ROOM", "KITCHEN", "BATHROOM")
-- All dimensions in decimal feet (e.g., 12.5 for 12'6")
-- Estimate x/y positions based on the room's position in the layout
-- If you cannot determine exact dimensions, make reasonable estimates based on standard room sizes
-- Include ALL visible rooms, hallways, closets, bathrooms
-- totalWidth and totalHeight should encompass the entire floor plan
-- Use OCR to read ALL text on the plan including dimensions, room labels, and total square footage
-- If you find square footage, calculate the aspect ratio and adjust totalWidth/totalHeight to match the actual square footage
-- Perimeter: Trace the outer boundary of the building. Start at top-left corner and go clockwise. Include all vertices where the boundary changes direction. For simple rectangular buildings, provide 4 corner points. For irregular shapes, provide all corner points.`;
+- WIREFRAME: Trace the COMPLETE outer boundary and ALL internal walls/partitions. Start at top-left, go clockwise around perimeter, then trace each internal wall segment.
+- SECTIONS: Each enclosed space (room) gets a boundary polygon. Provide coordinates in clockwise order starting from top-left of that section.
+- All coordinates in decimal feet (e.g., 12.5 for 12'6")
+- Room names should be uppercase and descriptive (MASTER BEDROOM, GUEST BEDROOM, KITCHEN, DINING ROOM, etc.)
+- totalWidth and totalHeight should match the actual floor plan dimensions
+- Use OCR to read ALL text including room labels, dimensions, and total square footage
+- If you find square footage, verify totalWidth x totalHeight approximately equals it
+- ACCURACY IS CRITICAL: The wireframe must exactly match the uploaded floor plan image`;
 
       try {
         const response = await invokeLLM({
@@ -306,6 +309,39 @@ Rules:
             console.error(
               `[parseFloorPlan] Adjusted dimensions: width=${parsed.totalWidth}ft, height=${parsed.totalHeight}ft`
             );
+          }
+        }
+        
+        // Validate wireframe format
+        if (parsed.wireframe && Array.isArray(parsed.wireframe)) {
+          console.error(`[parseFloorPlan] Wireframe extracted: ${parsed.wireframe.length} points`);
+          
+          // Validate wireframe points are within bounds
+          for (const point of parsed.wireframe) {
+            if (point.x < 0 || point.y < 0 || point.x > parsed.totalWidth || point.y > parsed.totalHeight) {
+              console.warn(
+                `[parseFloorPlan] Wireframe point (${point.x}, ${point.y}) outside bounds (0,0) to (${parsed.totalWidth}, ${parsed.totalHeight})`
+              );
+            }
+          }
+        }
+        
+        // Validate sections format
+        if (parsed.sections && Array.isArray(parsed.sections)) {
+          console.error(`[parseFloorPlan] Sections extracted: ${parsed.sections.length}`);
+          
+          for (const section of parsed.sections) {
+            console.error(`[parseFloorPlan] Section: ${section.id} - ${section.name} (${section.squareFeet} sqft)`);
+            
+            if (section.boundary && Array.isArray(section.boundary)) {
+              for (const point of section.boundary) {
+                if (point.x < 0 || point.y < 0 || point.x > parsed.totalWidth || point.y > parsed.totalHeight) {
+                  console.warn(
+                    `[parseFloorPlan] Section "${section.name}" point (${point.x}, ${point.y}) outside bounds`
+                  );
+                }
+              }
+            }
           }
         }
         

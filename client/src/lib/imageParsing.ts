@@ -5,11 +5,20 @@
 
 import { Room, Point, generateId } from "./floorPlanTypes";
 
+export interface WireframeSection {
+  id: string;
+  name: string;
+  boundary: Point[];
+  squareFeet?: number;
+}
+
 export interface ParsedFloorPlan {
-  rooms: Room[];
+  rooms: Room[];  // Keep for backward compatibility
   totalWidth: number;
   totalHeight: number;
-  perimeter?: Point[];
+  wireframe?: Point[];  // Complete wireframe polygon
+  sections?: WireframeSection[];  // Classified room sections
+  perimeter?: Point[];  // Outer boundary
   totalSquareFeet?: number;
   rawText: string;
 }
@@ -108,8 +117,15 @@ export async function parseFloorPlanImage(
     totalWidth: number;
     totalHeight: number;
     totalSquareFeet?: number;
+    wireframe?: Array<{ x: number; y: number }>;
+    sections?: Array<{
+      id: string;
+      name: string;
+      boundary: Array<{ x: number; y: number }>;
+      squareFeet?: number;
+    }>;
     perimeter?: Array<{ x: number; y: number }>;
-    rooms: Array<{
+    rooms?: Array<{
       name: string;
       widthFt: number;
       heightFt: number;
@@ -133,15 +149,41 @@ export async function parseFloorPlanImage(
   const totalWidth = Math.max(parsed.totalWidth || 30, 10);
   const totalHeight = Math.max(parsed.totalHeight || 20, 10);
 
-  const rooms: Room[] = (parsed.rooms || []).map((r) => ({
-    id: generateId(),
-    name: r.name || "ROOM",
-    x: Math.max(0, r.xFt || 0),
-    y: Math.max(0, r.yFt || 0),
-    width: Math.max(r.widthFt || 10, 4),
-    height: Math.max(r.heightFt || 8, 4),
-    color: getRoomColor(r.name || ""),
-  }));
+  // Convert wireframe sections to rooms for rendering
+  const rooms: Room[] = (parsed.sections || []).map((section) => {
+    // Calculate bounding box of section boundary
+    const xs = section.boundary.map((p) => p.x);
+    const ys = section.boundary.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const maxX = Math.max(...xs);
+    const maxY = Math.max(...ys);
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    return {
+      id: section.id || generateId(),
+      name: section.name || "ROOM",
+      x: minX,
+      y: minY,
+      width: Math.max(width, 4),
+      height: Math.max(height, 4),
+      color: getRoomColor(section.name || ""),
+    };
+  });
+
+  // Fallback: if no sections, use old room format
+  if (rooms.length === 0 && parsed.rooms) {
+    rooms.push(...parsed.rooms.map((r) => ({
+      id: generateId(),
+      name: r.name || "ROOM",
+      x: Math.max(0, r.xFt || 0),
+      y: Math.max(0, r.yFt || 0),
+      width: Math.max(r.widthFt || 10, 4),
+      height: Math.max(r.heightFt || 8, 4),
+      color: getRoomColor(r.name || ""),
+    })));
+  }
 
   onProgress({ stage: "complete", message: "Floor plan generated successfully!", progress: 100 });
 
@@ -149,6 +191,8 @@ export async function parseFloorPlanImage(
     rooms,
     totalWidth,
     totalHeight,
+    wireframe: parsed.wireframe,
+    sections: parsed.sections,
     perimeter: parsed.perimeter,
     totalSquareFeet: parsed.totalSquareFeet,
     rawText: JSON.stringify(parsed),
