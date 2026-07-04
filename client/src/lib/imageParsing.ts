@@ -149,19 +149,4 @@ export async function parseFloorPlanImage(
   };
 }
 
-// Generate a demo floor plan for testing without an image
-export function generateDemoFloorPlan(): ParsedFloorPlan {
-  const rooms: Room[] = [
-    { id: generateId(), name: "LIVING ROOM", x: 0, y: 0, width: 16, height: 14, color: "#1a3d2e" },
-    { id: generateId(), name: "KITCHEN", x: 16, y: 0, width: 12, height: 14, color: "#3d1e1e" },
-    { id: generateId(), name: "BEDROOM", x: 0, y: 14, width: 12, height: 12, color: "#1e3a5f" },
-    { id: generateId(), name: "BATHROOM", x: 12, y: 14, width: 8, height: 12, color: "#2a1e3d" },
-  ];
 
-  return {
-    rooms,
-    totalWidth: 28,
-    totalHeight: 26,
-    rawText: "Demo floor plan",
-  };
-}
