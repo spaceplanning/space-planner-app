@@ -163,15 +163,17 @@ export const appRouter = router({
         }
       }
 
-      const prompt = `You are an expert architectural floor plan analyzer. Analyze this floor plan image and extract:
+      const prompt = `You are an expert architectural floor plan analyzer with OCR capabilities. Analyze this floor plan image and extract:
 
 1. All rooms with their names and dimensions (width x depth in feet)
 2. The overall floor plan dimensions (total width x total height in feet)
+3. CRITICAL: Use OCR to find the total square footage text anywhere on the plan (e.g., "2,500 sq ft", "2500 SF", "Total: 2500")
 
 Return ONLY valid JSON in this exact format, no other text:
 {
   "totalWidth": <number in feet>,
   "totalHeight": <number in feet>,
+  "totalSquareFeet": <number or null if not found>,
   "rooms": [
     {
       "name": "<ROOM NAME in uppercase>",
@@ -189,7 +191,9 @@ Rules:
 - Estimate x/y positions based on the room's position in the layout
 - If you cannot determine exact dimensions, make reasonable estimates based on standard room sizes
 - Include ALL visible rooms, hallways, closets, bathrooms
-- totalWidth and totalHeight should encompass the entire floor plan`;
+- totalWidth and totalHeight should encompass the entire floor plan
+- Use OCR to read ALL text on the plan including dimensions, room labels, and total square footage
+- If you find square footage, calculate the aspect ratio and adjust totalWidth/totalHeight to match the actual square footage`;
 
       try {
         const response = await invokeLLM({
