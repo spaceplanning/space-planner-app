@@ -216,19 +216,28 @@ export const appRouter = router({
         }
       }
 
-      const prompt = `You are an expert architectural floor plan analyzer with OCR capabilities. Analyze this floor plan image and extract the COMPLETE WIREFRAME that exactly matches the uploaded document.
+      const prompt = `You are an expert architectural floor plan analyzer with OCR capabilities. Your task is to create an EXACT REPLICA of the uploaded floor plan as a wireframe with PRECISE DIMENSIONS.
 
-Extract:
-1. COMPLETE WIREFRAME: Every wall, partition, and boundary line in the floor plan
-2. Use OCR to find the total square footage text anywhere on the plan
-3. Identify and label each enclosed space with its room type
-4. Preserve TRUE MEASUREMENTS from the floor plan document
+**CRITICAL REQUIREMENTS:**
+1. Extract TOTAL SQUARE FOOTAGE from the document using OCR
+2. Extract ALL room dimensions and labels from the document
+3. Calculate exact totalWidth and totalHeight to match the total square footage
+4. Create a wireframe that is a PIXEL-PERFECT replica of the original layout
+5. Ensure all room areas sum to the total square footage (within 2% tolerance)
+
+**DIMENSION EXTRACTION PRIORITY:**
+1. First, use OCR to read the total square footage text on the plan
+2. Read all individual room dimensions shown on the plan
+3. Read the overall floor plan dimensions if shown
+4. If dimensions conflict, prioritize the total square footage as the source of truth
+5. Recalculate totalWidth/totalHeight to ensure area = totalSquareFeet
 
 Return ONLY valid JSON in this exact format, no other text:
 {
-  "totalWidth": <number in feet>,
-  "totalHeight": <number in feet>,
-  "totalSquareFeet": <number or null if not found>,
+  "totalWidth": <number in feet - MUST satisfy: totalWidth * totalHeight ≈ totalSquareFeet>,
+  "totalHeight": <number in feet - MUST satisfy: totalWidth * totalHeight ≈ totalSquareFeet>,
+  "totalSquareFeet": <number from OCR - this is the source of truth>,
+  "dimensionNotes": "<explanation of how dimensions were calculated to match sqft>",
   "wireframe": [
     {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
     {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
@@ -237,26 +246,27 @@ Return ONLY valid JSON in this exact format, no other text:
   "sections": [
     {
       "id": "section_1",
-      "name": "<ROOM TYPE: BEDROOM, KITCHEN, BATHROOM, LIVING ROOM, HALLWAY, CLOSET, LAUNDRY, ENTRY, etc.>",
+      "name": "<ROOM TYPE: MASTER BEDROOM, GUEST BEDROOM, KITCHEN, DINING ROOM, LIVING ROOM, BATHROOM, POWDER ROOM, LAUNDRY, ENTRY, HALLWAY, CLOSET, PANTRY, etc.>",
       "boundary": [
         {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
         {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
         ...
       ],
-      "squareFeet": <calculated or measured square footage of this section>
+      "squareFeet": <exact square footage for this room from OCR or calculated>,
+      "dimensions": "<width x depth in feet'inches\" format if shown on plan>"
     }
   ]
 }
 
-Rules:
-- WIREFRAME: Trace the COMPLETE outer boundary and ALL internal walls/partitions. Start at top-left, go clockwise around perimeter, then trace each internal wall segment.
-- SECTIONS: Each enclosed space (room) gets a boundary polygon. Provide coordinates in clockwise order starting from top-left of that section.
-- All coordinates in decimal feet (e.g., 12.5 for 12'6")
-- Room names should be uppercase and descriptive (MASTER BEDROOM, GUEST BEDROOM, KITCHEN, DINING ROOM, etc.)
-- totalWidth and totalHeight should match the actual floor plan dimensions
-- Use OCR to read ALL text including room labels, dimensions, and total square footage
-- If you find square footage, verify totalWidth x totalHeight approximately equals it
-- ACCURACY IS CRITICAL: The wireframe must exactly match the uploaded floor plan image`;
+**EXACT REPLICA RULES:**
+- WIREFRAME: Trace EVERY wall, partition, and boundary line exactly as shown. Start at top-left, go clockwise around perimeter, then trace each internal wall.
+- SECTIONS: Each enclosed space gets a boundary polygon with coordinates in clockwise order starting from top-left.
+- COORDINATE ACCURACY: All coordinates must be precise to 0.1 feet (1.2 inches) to match the original layout
+- SQUARE FOOTAGE VALIDATION: Sum of all section squareFeet MUST equal totalSquareFeet (within 2%)
+- DIMENSION MATCHING: If totalWidth × totalHeight ≠ totalSquareFeet, adjust dimensions proportionally to match sqft
+- ORIENTATION: Preserve exact orientation - do not rotate or mirror the layout
+- ROOM LABELS: Use exact room names from the plan, or infer from context (e.g., "MASTER BEDROOM" not just "BEDROOM")
+- ACCURACY IS CRITICAL: This must be a perfect replica of the uploaded floor plan`;
 
       try {
         const response = await invokeLLM({
@@ -338,31 +348,62 @@ Rules:
           throw new Error("No valid JSON found in response");
         }
         
-        // Validate that rooms fit within the square footage dimensions
-        if (parsed.totalSquareFeet && parsed.totalSquareFeet > 0) {
-          const calculatedArea = parsed.totalWidth * parsed.totalHeight;
-          const squareFeetArea = parsed.totalSquareFeet;
-          const tolerance = 0.2; // Allow 20% difference
+        // Validate and correct dimensions using the dimension validator
+        const { validateAndCorrectDimensions, validateWireframeGeometry, validateSectionBoundaries } = await import("./dimensionValidator");
+        
+        const validationResult = validateAndCorrectDimensions(parsed);
+        
+        if (!validationResult.isValid) {
+          console.warn(
+            `[parseFloorPlan] Dimension validation issues: ${validationResult.issues.join("; ")}`
+          );
+        }
+        
+        if (validationResult.corrections.length > 0) {
+          console.error(
+            `[parseFloorPlan] Applied corrections: ${validationResult.corrections.join("; ")}`
+          );
+        }
+        
+        // Use corrected data
+        parsed = validationResult.correctedData;
+        
+        // Validate wireframe geometry
+        if (parsed.wireframe && parsed.wireframe.length > 0) {
+          const wireframeValidation = validateWireframeGeometry(
+            parsed.wireframe,
+            parsed.totalWidth,
+            parsed.totalHeight
+          );
           
-          if (Math.abs(calculatedArea - squareFeetArea) / squareFeetArea > tolerance) {
+          if (!wireframeValidation.isValid) {
             console.warn(
-              `[parseFloorPlan] Area mismatch: calculated=${calculatedArea.toFixed(0)} sqft, ` +
-              `extracted=${squareFeetArea.toFixed(0)} sqft. Adjusting dimensions to match extracted sqft.`
-            );
-            
-            // Recalculate dimensions to match the extracted square footage
-            // Assume a reasonable aspect ratio (e.g., 1.5:1 for typical floor plans)
-            const aspectRatio = 1.5;
-            const newHeight = Math.sqrt(squareFeetArea / aspectRatio);
-            const newWidth = newHeight * aspectRatio;
-            
-            parsed.totalWidth = Math.round(newWidth * 10) / 10;
-            parsed.totalHeight = Math.round(newHeight * 10) / 10;
-            
-            console.error(
-              `[parseFloorPlan] Adjusted dimensions: width=${parsed.totalWidth}ft, height=${parsed.totalHeight}ft`
+              `[parseFloorPlan] Wireframe geometry issues: ${wireframeValidation.issues.join("; ")}`
             );
           }
+          
+          console.error(
+            `[parseFloorPlan] Wireframe stats: ${wireframeValidation.stats.pointCount} points, ` +
+            `coverage: ${wireframeValidation.stats.coverage.toFixed(1)}%, ` +
+            `bounds: (${wireframeValidation.stats.minX}, ${wireframeValidation.stats.minY}) to ` +
+            `(${wireframeValidation.stats.maxX}, ${wireframeValidation.stats.maxY})`
+          );
+        }
+        
+        // Validate section boundaries
+        if (parsed.sections && parsed.sections.length > 0) {
+          const sectionValidation = validateSectionBoundaries(parsed.sections);
+          
+          if (!sectionValidation.isValid) {
+            console.warn(
+              `[parseFloorPlan] Section boundary issues: ${sectionValidation.issues.join("; ")}`
+            );
+          }
+          
+          console.error(
+            `[parseFloorPlan] Section validation: ${sectionValidation.sectionStats.length} sections, ` +
+            `total area: ${sectionValidation.sectionStats.reduce((sum, s) => sum + s.calculatedArea, 0).toFixed(0)} sqft`
+          );
         }
         
         // Validate wireframe format
@@ -398,21 +439,7 @@ Rules:
           }
         }
         
-        // Validate that all rooms fit within the boundaries
-        if (parsed.rooms && Array.isArray(parsed.rooms)) {
-          for (const room of parsed.rooms) {
-            const roomRight = room.xFt + room.widthFt;
-            const roomBottom = room.yFt + room.heightFt;
-            
-            if (roomRight > parsed.totalWidth || roomBottom > parsed.totalHeight) {
-              console.warn(
-                `[parseFloorPlan] Room "${room.name}" extends beyond boundaries. ` +
-                `Room: (${room.xFt}, ${room.yFt}) to (${roomRight}, ${roomBottom}), ` +
-                `Boundaries: (0, 0) to (${parsed.totalWidth}, ${parsed.totalHeight})`
-              );
-            }
-          }
-        }
+        // All validation is now handled by dimensionValidator
         
         return parsed;
       } catch (error) {

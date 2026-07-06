@@ -87,3 +87,10 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Add UI trigger in ExportDialog for measurements report
 - [x] Write tests for measurement calculations
 - [x] Test complete measurements report workflow
+
+## Exact Replica Floor Plan Upload (NEW)
+- [x] Improve LLM prompt for precise dimension extraction based on sqft
+- [x] Add dimension validation and correction logic
+- [x] Enhance wireframe extraction to perfectly match original layout
+- [x] Add tests for exact replica validation
+- [x] Test with sample floor plans

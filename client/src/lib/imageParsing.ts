@@ -89,13 +89,16 @@ export async function parseFloorPlanImage(
   mutate: (input: { base64: string; fileType: string }) => Promise<{
     totalWidth: number;
     totalHeight: number;
-    rooms: Array<{
+    totalSquareFeet?: number;
+    wireframe?: Array<{ x: number; y: number }>;
+    sections?: Array<{
+      id: string;
       name: string;
-      widthFt: number;
-      heightFt: number;
-      xFt: number;
-      yFt: number;
+      boundary: Array<{ x: number; y: number }>;
+      squareFeet?: number;
+      dimensions?: string;
     }>;
+    dimensionNotes?: string;
   }>
 ): Promise<ParsedFloorPlan> {
   onProgress({ stage: "uploading", message: "Reading image file...", progress: 10 });
