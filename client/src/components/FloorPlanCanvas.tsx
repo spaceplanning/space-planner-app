@@ -18,12 +18,20 @@ import {
   feetToPx,
   formatFeetInches,
   generateId,
+  ROOM_COLORS,
 } from "@/lib/floorPlanTypes";
 import { FurnitureTemplate, CATEGORY_COLORS } from "@/lib/furnitureData";
 import { FURNITURE_SYMBOLS } from "@/lib/furnitureSymbols";
 import { RotateCw, Trash2, Move, Edit3, Ruler } from "lucide-react";
 import RoomEditorDialog from "./RoomEditorDialog";
 import MeasurementPanel from "./MeasurementPanel";
+import {
+  pointsToSVGPath,
+  calculatePolygonCentroid,
+  getPolygonBounds,
+  isPointInPolygon,
+} from "@/lib/polygonUtils";
+import type { Point as PolygonPoint } from "@/lib/polygonUtils";
 
 const GRID_FT = 1;
 const MIN_SCALE = 8;
@@ -461,6 +469,84 @@ export default function FloorPlanCanvas({
       );
     });
 
+  // Render irregular polygons from wireframe sections
+  const renderPolygons = () => {
+    if (!plan.sections || plan.sections.length === 0) return null;
+
+    return plan.sections.map((section) => {
+      if (!section.boundary || section.boundary.length < 3) return null;
+
+      const polygonPoints = section.boundary.map((p) => ({
+        x: feetToPx(p.x, scale),
+        y: feetToPx(p.y, scale),
+      }));
+
+      const isHidden = focusedRoomId && section.id !== focusedRoomId;
+      const pathData = pointsToSVGPath(polygonPoints);
+      const centroid = calculatePolygonCentroid(polygonPoints);
+
+      const roomColor = Object.entries(ROOM_COLORS).find(([key]) =>
+        section.name.toUpperCase().includes(key)
+      )?.[1] || ROOM_COLORS.DEFAULT;
+
+      return (
+        <g
+          key={section.id}
+          opacity={isHidden ? 0.08 : 1}
+          style={{ transition: "opacity 300ms", cursor: "pointer" }}
+          onDoubleClick={(e) => { e.stopPropagation(); }}
+        >
+          <path d={pathData} fill={roomColor} fillOpacity={0.6} />
+          <path d={pathData} fill="none" stroke="#e0f2fe" strokeWidth={2.5} />
+          {!isHidden && scale >= 24 && (
+            <>
+              {polygonPoints.map((point, idx) => (
+                <circle
+                  key={`vertex-${section.id}-${idx}`}
+                  cx={point.x}
+                  cy={point.y}
+                  r={3}
+                  fill="#facc15"
+                  opacity={0.4}
+                />
+              ))}
+            </>
+          )}
+          {!isHidden && (
+            <>
+              <text
+                x={centroid.x}
+                y={centroid.y - 8}
+                textAnchor="middle"
+                fill="#e0f2fe"
+                fontSize={Math.max(10, Math.min(14, scale / 2))}
+                fontFamily="'Space Mono', monospace"
+                fontWeight="700"
+                letterSpacing="0.08em"
+                style={{ pointerEvents: "none", userSelect: "none" }}
+              >
+                {section.name}
+              </text>
+              {showLabels && section.squareFeet && (
+                <text
+                  x={centroid.x}
+                  y={centroid.y + 10}
+                  textAnchor="middle"
+                  fill="#facc15"
+                  fontSize={Math.max(8, Math.min(11, scale / 2.5))}
+                  fontFamily="'Space Mono', monospace"
+                  style={{ pointerEvents: "none", userSelect: "none" }}
+                >
+                  {section.squareFeet.toFixed(0)} sq ft
+                </text>
+              )}
+            </>
+          )}
+        </g>
+      );
+    });
+  };
+
   // Render placed furniture
   const renderFurniture = () =>
     plan.furniture.map((item) => {
@@ -704,7 +790,7 @@ export default function FloorPlanCanvas({
           >
             {renderWireframe()}
             {renderPerimeter()}
-            {renderRooms()}
+            {plan.sections && plan.sections.length > 0 ? renderPolygons() : renderRooms()}
             {renderFurniture()}
             {renderDropPreview()}
             {renderDrawPreview()}
