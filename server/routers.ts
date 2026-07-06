@@ -345,7 +345,32 @@ Return ONLY valid JSON in this exact format, no other text:
         
         if (!parsed) {
           console.error("[parseFloorPlan] Response text:", responseText.substring(0, 500));
-          throw new Error("No valid JSON found in response");
+          
+          // Check if LLM rejected the image (common rejection patterns)
+          const rejectionPatterns = [
+            /cannot process this request/i,
+            /not.*floor plan/i,
+            /not.*architectural/i,
+            /cannot extract/i,
+            /unable to.*extract/i,
+            /screenshot/i,
+            /mobile.*phone/i,
+            /transaction/i,
+            /not a valid/i,
+          ];
+          
+          const isRejected = rejectionPatterns.some(pattern => pattern.test(responseText));
+          
+          if (isRejected) {
+            throw new Error(
+              "Invalid floor plan image. Please upload a clear floor plan image (PDF, PNG, or JPG). " +
+              "The image should show an architectural floor plan with room layouts and dimensions."
+            );
+          }
+          
+          throw new Error(
+            "Failed to parse floor plan. Please ensure the image is a clear floor plan with visible room layouts and dimensions."
+          );
         }
         
         // Validate and correct dimensions using the dimension validator
