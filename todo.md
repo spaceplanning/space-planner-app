@@ -101,3 +101,11 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Add interactive polygon selection and editing (basic support)
 - [x] Add tests for polygon rendering
 - [x] Test with complex floor plan shapes
+
+## Polygon Vertex Editing (NEW)
+- [x] Create vertex editing state management
+- [x] Implement vertex drag detection and mouse events
+- [x] Add real-time area/perimeter calculation during drag
+- [x] Create vertex editing UI with live measurements
+- [x] Add tests for vertex editing
+- [x] Test drag-to-edit workflow end-to-end

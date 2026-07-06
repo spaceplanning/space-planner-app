@@ -32,6 +32,14 @@ import {
   isPointInPolygon,
 } from "@/lib/polygonUtils";
 import type { Point as PolygonPoint } from "@/lib/polygonUtils";
+import {
+  isPointNearVertex,
+  findClosestVertex,
+  updateVertexInBoundary,
+  calculateDragResult,
+  isValidVertexEdit,
+  formatMeasurements,
+} from "@/lib/vertexEditingUtils";
 
 const GRID_FT = 1;
 const MIN_SCALE = 8;
@@ -68,6 +76,14 @@ interface MeasurementPoint {
   y: number;
 }
 
+interface VertexEditState {
+  sectionId: string;
+  vertexIndex: number;
+  originalVertex: PolygonPoint;
+  currentVertex: PolygonPoint;
+  isDragging: boolean;
+}
+
 export default function FloorPlanCanvas({
   plan,
   focusedRoomId,
@@ -90,6 +106,8 @@ export default function FloorPlanCanvas({
   const [measureMode, setMeasureMode] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [measurePoints, setMeasurePoints] = useState<MeasurementPoint[]>([]);
+  const [vertexEditState, setVertexEditState] = useState<VertexEditState | null>(null);
+  const [editingSection, setEditingSection] = useState<any | null>(null);
 
   const focusedRoom = useMemo(
     () => (focusedRoomId ? plan.rooms.find((r) => r.id === focusedRoomId) : null),
@@ -159,13 +177,64 @@ export default function FloorPlanCanvas({
       if (drawMode && e.button === 0) {
         const { xFt, yFt } = getCanvasPos(e);
         setDrawState({ startX: xFt, startY: yFt, currentX: xFt, currentY: yFt });
+        return;
+      }
+      
+      if (plan.sections && plan.sections.length > 0 && e.button === 0) {
+        const { xFt, yFt } = getCanvasPos(e);
+        const clickPoint = { x: xFt, y: yFt };
+        
+        for (const section of plan.sections) {
+          if (!section.boundary || section.boundary.length < 3) continue;
+          
+          const closest = findClosestVertex(clickPoint, section.boundary);
+          if (closest && closest.distance < 1) {
+            setVertexEditState({
+              sectionId: section.id,
+              vertexIndex: closest.index,
+              originalVertex: closest.vertex,
+              currentVertex: closest.vertex,
+              isDragging: true,
+            });
+            setEditingSection(section);
+            return;
+          }
+        }
       }
     },
-    [offset, drawMode, measureMode, getCanvasPos]
+    [offset, drawMode, measureMode, getCanvasPos, plan.sections]
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
+      if (vertexEditState && vertexEditState.isDragging && editingSection && plan.sections) {
+        const { xFt, yFt } = getCanvasPos(e);
+        const newVertex = { x: xFt, y: yFt };
+        
+        const updatedBoundary = updateVertexInBoundary(
+          editingSection.boundary,
+          vertexEditState.vertexIndex,
+          newVertex
+        );
+        
+        if (isValidVertexEdit(editingSection.boundary, vertexEditState.vertexIndex, newVertex)) {
+          setVertexEditState((prev) =>
+            prev ? { ...prev, currentVertex: newVertex } : null
+          );
+          
+          const updatedSections = plan.sections.map((s) =>
+            s.id === editingSection.id ? { ...s, boundary: updatedBoundary } : s
+          );
+          
+          onPlanChange({
+            ...plan,
+            sections: updatedSections,
+            updatedAt: Date.now(),
+          });
+        }
+        return;
+      }
+      
       if (isPanning) {
         setOffset({
           x: panStart.ox + (e.clientX - panStart.x),
@@ -202,13 +271,20 @@ export default function FloorPlanCanvas({
         setDropPreview({ x: xFt, y: yFt });
       }
     },
-    [isPanning, panStart, dragState, scale, plan, onPlanChange, drawState, getCanvasPos, draggedFurniture]
+    [isPanning, panStart, dragState, scale, plan, onPlanChange, drawState, getCanvasPos, draggedFurniture, vertexEditState, editingSection]
   );
 
   const handleMouseUp = useCallback(
     (e: React.MouseEvent) => {
       setIsPanning(false);
       setDragState(null);
+      
+      if (vertexEditState && vertexEditState.isDragging) {
+        setVertexEditState((prev) =>
+          prev ? { ...prev, isDragging: false } : null
+        );
+        return;
+      }
 
       // Finish drawing a room
       if (drawState) {
@@ -271,7 +347,8 @@ export default function FloorPlanCanvas({
     setDragState(null);
     setDropPreview(null);
     if (drawState) setDrawState(null);
-  }, [drawState]);
+  }, [drawState, vertexEditState]);
+
 
   const handleMeasureClear = useCallback(() => {
     setMeasurePoints([]);
@@ -500,16 +577,20 @@ export default function FloorPlanCanvas({
           <path d={pathData} fill="none" stroke="#e0f2fe" strokeWidth={2.5} />
           {!isHidden && scale >= 24 && (
             <>
-              {polygonPoints.map((point, idx) => (
-                <circle
-                  key={`vertex-${section.id}-${idx}`}
-                  cx={point.x}
-                  cy={point.y}
-                  r={3}
-                  fill="#facc15"
-                  opacity={0.4}
-                />
-              ))}
+              {polygonPoints.map((point, idx) => {
+                const isEditingVertex = vertexEditState?.sectionId === section.id && vertexEditState?.vertexIndex === idx;
+                return (
+                  <circle
+                    key={`vertex-${section.id}-${idx}`}
+                    cx={point.x}
+                    cy={point.y}
+                    r={isEditingVertex ? 6 : 3}
+                    fill={isEditingVertex ? "#3b82f6" : "#facc15"}
+                    opacity={isEditingVertex ? 1 : 0.4}
+                    style={{ cursor: "grab", transition: "all 150ms" }}
+                  />
+                );
+              })}
             </>
           )}
           {!isHidden && (
@@ -527,18 +608,60 @@ export default function FloorPlanCanvas({
               >
                 {section.name}
               </text>
-              {showLabels && section.squareFeet && (
-                <text
-                  x={centroid.x}
-                  y={centroid.y + 10}
-                  textAnchor="middle"
-                  fill="#facc15"
-                  fontSize={Math.max(8, Math.min(11, scale / 2.5))}
-                  fontFamily="'Space Mono', monospace"
-                  style={{ pointerEvents: "none", userSelect: "none" }}
-                >
-                  {section.squareFeet.toFixed(0)} sq ft
-                </text>
+              {showLabels && (
+                <>
+                  {vertexEditState?.sectionId === section.id && editingSection && (
+                    <>
+                      {(() => {
+                        const updatedBoundary = editingSection.boundary.map((v: PolygonPoint, i: number) =>
+                          i === vertexEditState.vertexIndex ? vertexEditState.currentVertex : v
+                        );
+                        const dragResult = calculateDragResult(editingSection.boundary, updatedBoundary);
+                        const { areaText, perimeterText } = formatMeasurements(dragResult.area, dragResult.perimeter);
+                        return (
+                          <>
+                            <text
+                              x={centroid.x}
+                              y={centroid.y + 10}
+                              textAnchor="middle"
+                              fill="#3b82f6"
+                              fontSize={Math.max(9, Math.min(12, scale / 2.5))}
+                              fontFamily="'Space Mono', monospace"
+                              fontWeight="700"
+                              style={{ pointerEvents: "none", userSelect: "none" }}
+                            >
+                              {areaText}
+                            </text>
+                            <text
+                              x={centroid.x}
+                              y={centroid.y + 25}
+                              textAnchor="middle"
+                              fill="#22d3ee"
+                              fontSize={Math.max(8, Math.min(11, scale / 2.8))}
+                              fontFamily="'Space Mono', monospace"
+                              style={{ pointerEvents: "none", userSelect: "none" }}
+                            >
+                              {perimeterText}
+                            </text>
+                          </>
+                        );
+                      })()}
+                    </>
+                  )}
+                  {(!vertexEditState || vertexEditState.sectionId !== section.id) && section.squareFeet && (
+                    <text
+                      x={centroid.x}
+                      y={centroid.y + 10}
+                      textAnchor="middle"
+                      fill="#facc15"
+                      fontSize={Math.max(8, Math.min(11, scale / 2.5))}
+                      fontFamily="'Space Mono', monospace"
+                      style={{ pointerEvents: "none", userSelect: "none" }}
+                    >
+                      {section.squareFeet.toFixed(0)} sq ft
+                    </text>
+                  )}
+                </>
               )}
             </>
           )}
