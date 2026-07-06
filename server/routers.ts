@@ -138,6 +138,59 @@ export const appRouter = router({
       ),
   }),
 
+  // Measurements report generation
+  measurements: router({
+    generateReport: protectedProcedure
+      .input(z.object({
+        floorPlanId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { generateMeasurementsReport } = await import("./measurements");
+        
+        // Get the floor plan
+        const plan = await db.getFloorPlanById(input.floorPlanId, ctx.user.id);
+        if (!plan) {
+          throw new Error("Floor plan not found");
+        }
+        
+        // Parse the JSON
+        let rooms: any[] = [];
+        let sections: any[] = [];
+        
+        try {
+          rooms = JSON.parse(plan.roomsJson);
+        } catch (e) {
+          console.error("Failed to parse rooms:", e);
+        }
+        
+        try {
+          // Check if sections are stored in furnitureJson (from wireframe parsing)
+          const furnitureData = JSON.parse(plan.furnitureJson);
+          if (furnitureData.sections) {
+            sections = furnitureData.sections;
+          }
+        } catch (e) {
+          console.error("Failed to parse sections:", e);
+        }
+        
+        // Generate the report
+        const report = generateMeasurementsReport(plan.name, rooms, sections);
+        
+        // Generate PDF
+        const { generateMeasurementsPdf } = await import("./measurementsPdf");
+        const pdfBuffer = generateMeasurementsPdf(report);
+        
+        // Convert to base64 for transmission
+        const pdfBase64 = pdfBuffer.toString("base64");
+        
+        return {
+          report,
+          pdfBase64,
+          fileName: `${plan.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-measurements.pdf`,
+        };
+      }),
+  }),
+
   // Floor plan image parsing via vision AI
   parseFloorPlan: protectedProcedure
     .input(z.object({

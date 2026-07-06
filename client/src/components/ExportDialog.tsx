@@ -8,18 +8,21 @@ import { X, Download, Loader2 } from "lucide-react";
 import { FloorPlan } from "@/lib/floorPlanTypes";
 import { exportFloorPlan } from "@/lib/exportUtils";
 import { notifySuccess, notifyError, notifyLoading } from "@/lib/notifications";
+import { trpc } from "@/lib/trpc";
 
 interface Props {
   plan: FloorPlan;
   canvasElement: HTMLElement | null;
   onClose: () => void;
+  planId?: string;
 }
 
-export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
-  const [format, setFormat] = useState<"pdf" | "png">("pdf");
+export default function ExportDialog({ plan, canvasElement, onClose, planId }: Props) {
+  const [format, setFormat] = useState<"pdf" | "png" | "measurements">("pdf");
   const [quality, setQuality] = useState<1 | 2 | 3>(2);
   const [includeMetadata, setIncludeMetadata] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const generateMeasurementsReport = trpc.measurements.generateReport.useMutation();
 
   const qualityLabels: Record<1 | 2 | 3, string> = {
     1: "Standard (96 DPI)",
@@ -28,6 +31,11 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
   };
 
   const handleExport = async () => {
+    if (format === "measurements") {
+      await handleExportMeasurements();
+      return;
+    }
+
     if (!canvasElement) {
       notifyError("Canvas not ready");
       return;
@@ -37,7 +45,7 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
     const loadingId = notifyLoading(`Exporting as ${format.toUpperCase()}...`);
     try {
       await exportFloorPlan(canvasElement, plan, {
-        format,
+        format: format as "pdf" | "png",
         scale: quality,
         includeMetadata,
       });
@@ -45,6 +53,42 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
       onClose();
     } catch (err) {
       notifyError((err as Error).message || "Export failed");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportMeasurements = async () => {
+    if (!planId) {
+      notifyError("Plan ID not available");
+      return;
+    }
+
+    setIsExporting(true);
+    const loadingId = notifyLoading("Generating measurements report...");
+    try {
+      const response = await generateMeasurementsReport.mutateAsync({ floorPlanId: planId });
+      
+      // Decode base64 PDF and trigger download
+      const binaryString = atob(response.pdfBase64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = response.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      notifySuccess("Measurements report exported as PDF");
+      onClose();
+    } catch (err) {
+      notifyError((err as Error).message || "Measurements export failed");
     } finally {
       setIsExporting(false);
     }
@@ -136,7 +180,7 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
                 marginTop: 2,
               }}
             >
-              HIGH-RESOLUTION PDF OR PNG
+              PDF, PNG, OR MEASUREMENTS REPORT
             </div>
           </div>
           <button
@@ -175,12 +219,13 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
           {/* Format selection */}
           <div>
             <label style={labelStyle}>Export Format</label>
-            <div style={{ display: "flex", gap: 8 }}>
-              {(["pdf", "png"] as const).map((fmt) => (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {(["pdf", "png", "measurements"] as const).map((fmt) => (
                 <label
                   key={fmt}
                   style={{
                     flex: 1,
+                    minWidth: 100,
                     display: "flex",
                     alignItems: "center",
                     gap: 6,
@@ -196,18 +241,19 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
                     name="format"
                     value={fmt}
                     checked={format === fmt}
-                    onChange={(e) => setFormat(e.target.value as "pdf" | "png")}
+                    onChange={(e) => setFormat(e.target.value as "pdf" | "png" | "measurements")}
                     style={{ cursor: "pointer" }}
                   />
                   <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 10, color: format === fmt ? "var(--bp-cyan)" : "var(--bp-text-primary)" }}>
-                    {fmt.toUpperCase()}
+                    {fmt === "measurements" ? "REPORT" : fmt.toUpperCase()}
                   </span>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Quality selection */}
+          {/* Quality selection - only show for PDF/PNG */}
+          {format !== "measurements" && (
           <div>
             <label style={labelStyle}>Resolution Quality</label>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -243,8 +289,31 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
               })}
             </div>
           </div>
+          )}
 
-          {/* Metadata checkbox */}
+          {/* Measurements info */}
+          {format === "measurements" && (
+          <div
+            style={{
+              background: "var(--bp-navy)",
+              border: "1px solid var(--bp-grid-subtle)",
+              padding: "10px 12px",
+              borderRadius: 2,
+              fontFamily: "'Space Mono', monospace",
+              fontSize: 9,
+              color: "var(--bp-text-primary)",
+              lineHeight: 1.6,
+            }}
+          >
+            <div style={{ marginBottom: 6 }}>📊 Detailed Measurements Report</div>
+            <div style={{ fontSize: 8, color: "var(--bp-text-muted)" }}>
+              Includes room areas, perimeters, and wireframe section data. Exported as PDF.
+            </div>
+          </div>
+          )}
+
+          {/* Metadata checkbox - only show for PDF/PNG */}
+          {format !== "measurements" && (
           <label
             style={{
               display: "flex",
@@ -267,8 +336,10 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
               Include metadata (plan name, dimensions, export date)
             </span>
           </label>
+          )}
 
-          {/* File size estimate */}
+          {/* File size estimate - only show for PDF/PNG */}
+          {format !== "measurements" && (
           <div
             style={{
               fontFamily: "'Space Mono', monospace",
@@ -284,6 +355,7 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
             {quality === 2 && "High quality: ~4-6 MB (recommended)"}
             {quality === 3 && "Ultra quality: ~8-12 MB (best for printing)"}
           </div>
+          )}
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
@@ -309,7 +381,7 @@ export default function ExportDialog({ plan, canvasElement, onClose }: Props) {
               ) : (
                 <>
                   <Download size={12} style={{ display: "inline", marginRight: 4 }} />
-                  EXPORT {format.toUpperCase()}
+                  EXPORT {format === "measurements" ? "REPORT" : format.toUpperCase()}
                 </>
               )}
             </button>

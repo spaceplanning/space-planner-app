@@ -79,3 +79,11 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Add room type classification for wireframe sections (LLM classifies sections)
 - [x] Server-side validation for wireframe and sections format
 - [x] Wireframe rendering on canvas with vertices
+
+## Measurements Report Feature (NEW)
+- [x] Create server-side measurement calculation utilities
+- [x] Add tRPC procedure for generating measurements report
+- [x] Implement PDF generation with jsPDF library
+- [x] Add UI trigger in ExportDialog for measurements report
+- [x] Write tests for measurement calculations
+- [x] Test complete measurements report workflow

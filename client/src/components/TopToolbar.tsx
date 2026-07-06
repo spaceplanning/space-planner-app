@@ -563,6 +563,7 @@ export default function TopToolbar({
         <ExportDialog
           plan={plan}
           canvasElement={canvasElement}
+          planId={plan.id}
           onClose={() => setShowExport(false)}
         />
       )}
