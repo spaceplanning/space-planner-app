@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FloorPlan, formatFeetInches, parseFeetInches, generateId } from "@/lib/floorPlanTypes";
 import ExportDialog from "./ExportDialog";
 import ShareDialog from "./ShareDialog";
+import ShareFloorPlanDialog from "./ShareFloorPlanDialog";
 import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 interface Props {
@@ -78,6 +79,7 @@ export default function TopToolbar({
   onToggleMobilePanel,
 }: Props) {
   const [showPlansMenu, setShowPlansMenu] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [showRoomMenu, setShowRoomMenu] = useState(false);
   const [showDimensions, setShowDimensions] = useState(false);
   const [showExport, setShowExport] = useState(false);

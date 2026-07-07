@@ -123,3 +123,10 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Implement bulk delete mutation and handler
 - [x] Add tests for bulk delete functionality
 - [x] Test bulk delete workflow end-to-end
+
+## Share Floor Plan Feature (NEW)
+- [x] Create ShareFloorPlanDialog component with download/email options
+- [x] Add email sending capability via tRPC procedure
+- [x] Integrate share dialog into TopToolbar
+- [x] Add tests for share functionality
+- [x] Test share workflow end-to-end

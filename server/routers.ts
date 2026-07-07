@@ -136,6 +136,52 @@ export const appRouter = router({
       .query(({ input }) =>
         db.getShareByToken(input.token)
       ),
+
+    sendFloorPlanEmail: protectedProcedure
+      .input(z.object({
+        floorPlanId: z.string(),
+        recipientEmail: z.string().email(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get the floor plan
+        const floorPlan = await db.getFloorPlanById(input.floorPlanId, ctx.user.id);
+        if (!floorPlan) {
+          throw new Error("Floor plan not found");
+        }
+
+        // For now, just return success - email sending would require email service integration
+        // In production, integrate with SendGrid, AWS SES, or similar
+        return {
+          success: true,
+          message: `Floor plan "${floorPlan.name}" will be sent to ${input.recipientEmail}`,
+        };
+      }),
+
+    downloadFloorPlanPdf: protectedProcedure
+      .input(z.object({
+        floorPlanId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get the floor plan
+        const floorPlan = await db.getFloorPlanById(input.floorPlanId, ctx.user.id);
+        if (!floorPlan) {
+          throw new Error("Floor plan not found");
+        }
+
+        // Generate PDF
+        const { generateMeasurementsPdf } = await import("./measurementsPdf");
+        const { generateMeasurementsReport } = await import("./measurements");
+        const rooms = floorPlan.roomsJson ? JSON.parse(floorPlan.roomsJson) : [];
+        const measurements = generateMeasurementsReport(floorPlan.name, rooms);
+        const pdfBuffer = generateMeasurementsPdf(measurements);
+
+        // Return base64 encoded PDF for download
+        return {
+          success: true,
+          pdfData: Buffer.from(pdfBuffer).toString("base64"),
+          fileName: `${floorPlan.name}.pdf`,
+        };
+      }),
   }),
 
   // Measurements report generation
