@@ -109,3 +109,9 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Create vertex editing UI with live measurements
 - [x] Add tests for vertex editing
 - [x] Test drag-to-edit workflow end-to-end
+
+## Exact Wireframe Extraction Fix (PRIORITY)
+- [x] Enhance LLM prompt to prioritize complete wireframe geometry over room-by-room parsing
+- [x] Implement perimeter tracing to extract exact boundary polygon
+- [x] Add validation to ensure wireframe matches floor plan outline
+- [x] Test with provided floor plan screenshot to verify exact replica

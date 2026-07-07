@@ -216,19 +216,27 @@ export const appRouter = router({
         }
       }
 
-      const prompt = `You are an expert architectural floor plan analyzer with OCR capabilities. Your task is to create an EXACT REPLICA of the uploaded floor plan as a wireframe with PRECISE DIMENSIONS.
+            const prompt = `You are an expert architectural floor plan analyzer with OCR and geometric tracing capabilities. Your task is to create an EXACT REPLICA of the uploaded floor plan as a complete wireframe.
 
-**CRITICAL REQUIREMENTS:**
-1. Extract TOTAL SQUARE FOOTAGE from the document using OCR
-2. Extract ALL room dimensions and labels from the document
-3. Calculate exact totalWidth and totalHeight to match the total square footage
-4. Create a wireframe that is a PIXEL-PERFECT replica of the original layout
-5. Ensure all room areas sum to the total square footage (within 2% tolerance)
+**CRITICAL REQUIREMENTS - WIREFRAME FIRST:**
+1. TRACE THE COMPLETE PERIMETER: Identify and trace the outer boundary of the entire floor plan. This is the main wireframe polygon.
+2. TRACE ALL INTERNAL WALLS: Identify all internal walls, partitions, and divisions within the perimeter.
+3. EXTRACT ROOM BOUNDARIES: For each enclosed space (room), extract its boundary polygon based on the walls.
+4. EXTRACT DIMENSIONS: Use OCR to read all dimension labels, room names, and square footage from the plan.
+5. COORDINATE MAPPING: Convert all traced walls and boundaries to precise (x, y) coordinates in feet.
 
-**DIMENSION EXTRACTION PRIORITY:**
-1. First, use OCR to read the total square footage text on the plan
-2. Read all individual room dimensions shown on the plan
-3. Read the overall floor plan dimensions if shown
+**WIREFRAME GEOMETRY PRIORITY (DO THIS FIRST):**
+1. Trace the outer perimeter starting from top-left corner, going CLOCKWISE around the entire boundary
+2. Include ALL corners, angles, and indentations - no approximations or simplifications
+3. Trace each internal wall segment with precise coordinates
+4. Create section boundaries by connecting wall segments to form closed polygons
+5. Ensure all traced coordinates maintain exact angles and distances from the original
+6. For irregular/angled walls: trace the exact angle, not a simplified rectangle
+
+**DIMENSION EXTRACTION PRIORITY (AFTER WIREFRAME):**
+1. Extract total square footage from OCR text on the plan
+2. Extract individual room dimensions shown on the plan
+3. Extract overall floor plan dimensions if shown
 4. If dimensions conflict, prioritize the total square footage as the source of truth
 5. Recalculate totalWidth/totalHeight to ensure area = totalSquareFeet
 
@@ -246,7 +254,7 @@ Return ONLY valid JSON in this exact format, no other text:
   "sections": [
     {
       "id": "section_1",
-      "name": "<ROOM TYPE: MASTER BEDROOM, GUEST BEDROOM, KITCHEN, DINING ROOM, LIVING ROOM, BATHROOM, POWDER ROOM, LAUNDRY, ENTRY, HALLWAY, CLOSET, PANTRY, etc.>",
+      "name": "<ROOM TYPE: MASTER BEDROOM, GUEST BEDROOM, KITCHEN, DINING ROOM, LIVING ROOM, BATHROOM, POWDER ROOM, LAUNDRY, ENTRY, HALLWAY, CLOSET, PANTRY, STORAGE, PATIO/BALCONY, etc.>",
       "boundary": [
         {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
         {"x": <x coordinate in feet>, "y": <y coordinate in feet>},
@@ -258,7 +266,7 @@ Return ONLY valid JSON in this exact format, no other text:
   ]
 }
 
-**EXACT REPLICA RULES:**
+**EXACT REPLICA RULES - CRITICAL:**
 - WIREFRAME: Trace EVERY wall, partition, and boundary line exactly as shown. Start at top-left, go clockwise around perimeter, then trace each internal wall.
 - SECTIONS: Each enclosed space gets a boundary polygon with coordinates in clockwise order starting from top-left.
 - COORDINATE ACCURACY: All coordinates must be precise to 0.1 feet (1.2 inches) to match the original layout
@@ -266,7 +274,8 @@ Return ONLY valid JSON in this exact format, no other text:
 - DIMENSION MATCHING: If totalWidth × totalHeight ≠ totalSquareFeet, adjust dimensions proportionally to match sqft
 - ORIENTATION: Preserve exact orientation - do not rotate or mirror the layout
 - ROOM LABELS: Use exact room names from the plan, or infer from context (e.g., "MASTER BEDROOM" not just "BEDROOM")
-- ACCURACY IS CRITICAL: This must be a perfect replica of the uploaded floor plan`;
+- NO SIMPLIFICATION: Do not approximate irregular shapes as rectangles. Trace the exact boundary.
+- ACCURACY IS CRITICAL: This must be a pixel-perfect replica of the uploaded floor plan`;
 
       try {
         const response = await invokeLLM({
@@ -375,6 +384,7 @@ Return ONLY valid JSON in this exact format, no other text:
         
         // Validate and correct dimensions using the dimension validator
         const { validateAndCorrectDimensions, validateWireframeGeometry, validateSectionBoundaries } = await import("./dimensionValidator");
+        const { validatePerimeter, ensureClockwise, validateSectionsWithinPerimeter } = await import("./perimeterTracing");
         
         const validationResult = validateAndCorrectDimensions(parsed);
         
@@ -392,6 +402,33 @@ Return ONLY valid JSON in this exact format, no other text:
         
         // Use corrected data
         parsed = validationResult.correctedData;
+        
+        // Validate wireframe perimeter matches floor plan
+        if (parsed.wireframe && parsed.wireframe.length > 0) {
+          // Ensure wireframe is in clockwise order
+          parsed.wireframe = ensureClockwise(parsed.wireframe);
+          
+          // Validate perimeter against expected square footage
+          const perimeterValidation = validatePerimeter(
+            parsed.wireframe,
+            parsed.totalSquareFeet,
+            0.05
+          );
+          
+          if (!perimeterValidation.isValid) {
+            console.error("[parseFloorPlan] Perimeter validation errors:", perimeterValidation.errors);
+            throw new Error(`Wireframe perimeter validation failed: ${perimeterValidation.errors.join("; ")}`);
+          }
+          
+          if (perimeterValidation.warnings.length > 0) {
+            console.warn("[parseFloorPlan] Perimeter warnings:", perimeterValidation.warnings);
+          }
+          
+          console.error(
+            `[parseFloorPlan] Wireframe validated: ${perimeterValidation.perimeter.length.toFixed(1)} ft perimeter, ` +
+            `${perimeterValidation.perimeter.area.toFixed(1)} sq ft area`
+          );
+        }
         
         // Validate wireframe geometry
         if (parsed.wireframe && parsed.wireframe.length > 0) {
