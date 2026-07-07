@@ -115,3 +115,11 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Implement perimeter tracing to extract exact boundary polygon
 - [x] Add validation to ensure wireframe matches floor plan outline
 - [x] Test with provided floor plan screenshot to verify exact replica
+
+## Bulk Delete Feature (NEW)
+- [x] Add multi-select state management to Home component
+- [x] Create BulkDeleteDialog component with confirmation
+- [x] Add checkboxes to plan list items for selection
+- [x] Implement bulk delete mutation and handler
+- [x] Add tests for bulk delete functionality
+- [x] Test bulk delete workflow end-to-end

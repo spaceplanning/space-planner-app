@@ -27,6 +27,7 @@ import FloorPlanCanvas from "@/components/FloorPlanCanvas";
 import LeftPanel from "@/components/LeftPanel";
 import TopToolbar from "@/components/TopToolbar";
 import CustomFurnitureDialog from "@/components/CustomFurnitureDialog";
+import BulkDeleteDialog from "@/components/BulkDeleteDialog";
 import { trpc } from "@/lib/trpc";
 import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
@@ -55,6 +56,9 @@ export default function Home() {
   const [showCustomDialog, setShowCustomDialog] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
   const [showMobilePanel, setShowMobilePanel] = useState(false);
+  const [selectedPlanIds, setSelectedPlanIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Detect mobile screen size
@@ -186,6 +190,54 @@ export default function Home() {
   }, [plans.length]);
 
   const deleteFloorPlanMutation = trpc.floorPlans.delete.useMutation();
+
+  const handleTogglePlanSelection = useCallback(
+    (id: string) => {
+      const newSelected = new Set(selectedPlanIds);
+      if (newSelected.has(id)) {
+        newSelected.delete(id);
+      } else {
+        newSelected.add(id);
+      }
+      setSelectedPlanIds(newSelected);
+    },
+    [selectedPlanIds]
+  );
+
+  const handleBulkDelete = useCallback(() => {
+    if (selectedPlanIds.size === 0) return;
+
+    const idsToDelete = Array.from(selectedPlanIds);
+    
+    // Delete each plan
+    idsToDelete.forEach((id) => {
+      deleteFloorPlanMutation.mutate(
+        { id },
+        {
+          onSuccess: () => {
+            // Remove from plans list
+            setPlans((prevPlans) => prevPlans.filter((p) => p.id !== id));
+            
+            // If deleted plan was active, switch to another
+            if (activePlanId === id) {
+              const remaining = plans.filter((p) => p.id !== id);
+              if (remaining.length > 0) {
+                setActivePlanId(remaining[0].id);
+              }
+            }
+          },
+          onError: (error) => {
+            notifyError(`Failed to delete plan: ${error.message}`);
+          },
+        }
+      );
+    });
+
+    // Clear selection and close dialog
+    setSelectedPlanIds(new Set());
+    setShowBulkDeleteDialog(false);
+    notifySuccess(`Deleted ${idsToDelete.length} plan${idsToDelete.length !== 1 ? "s" : ""}`);
+  }, [selectedPlanIds, plans, activePlanId, deleteFloorPlanMutation]);
 
   const handleDeletePlan = useCallback(
     (id: string) => {

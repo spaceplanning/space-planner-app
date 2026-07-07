@@ -16,7 +16,9 @@ import {
   Settings,
   Download,
   Share2,
+  Trash,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FloorPlan, formatFeetInches, parseFeetInches, generateId } from "@/lib/floorPlanTypes";
 import ExportDialog from "./ExportDialog";
 import ShareDialog from "./ShareDialog";
@@ -42,6 +44,11 @@ interface Props {
   onToggleLabels?: (show: boolean) => void;
   isMobile?: boolean;
   onToggleMobilePanel?: () => void;
+  selectedPlanIds?: Set<string>;
+  onTogglePlanSelection?: (id: string) => void;
+  onBulkDelete?: () => void;
+  selectMode?: boolean;
+  onToggleSelectMode?: () => void;
 }
 
 export default function TopToolbar({
@@ -58,6 +65,11 @@ export default function TopToolbar({
   onGridSnapChange,
   canUndo = false,
   canRedo = false,
+  selectedPlanIds = new Set(),
+  onTogglePlanSelection,
+  onBulkDelete,
+  selectMode = false,
+  onToggleSelectMode,
   onUndo,
   onRedo,
   showLabels = true,
@@ -178,6 +190,13 @@ export default function TopToolbar({
                   onMouseEnter={(e) => { if (p.id !== plan.id) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)"; }}
                   onMouseLeave={(e) => { if (p.id !== plan.id) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                 >
+                  {selectedPlanIds && selectedPlanIds.size > 0 && (
+                    <Checkbox
+                      checked={selectedPlanIds.has(p.id)}
+                      onCheckedChange={() => onTogglePlanSelection?.(p.id)}
+                      className="mr-2"
+                    />
+                  )}
                   <div
                     style={{ flex: 1 }}
                     onClick={() => { onSelectPlan(p.id); setShowPlansMenu(false); }}
