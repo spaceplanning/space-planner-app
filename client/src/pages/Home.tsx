@@ -185,18 +185,33 @@ export default function Home() {
     notifySuccess(`Created new plan: ${newPlan.name}`);
   }, [plans.length]);
 
+  const deleteFloorPlanMutation = trpc.floorPlans.delete.useMutation();
+
   const handleDeletePlan = useCallback(
     (id: string) => {
       if (plans.length <= 1) return;
-      const remaining = plans.filter((p) => p.id !== id);
-      setPlans(remaining);
-      if (activePlanId === id) {
-        setActivePlanId(remaining[0].id);
-        setFocusedRoomId(null);
-      }
-      notifySuccess("Plan deleted");
+      
+      // Delete from server
+      deleteFloorPlanMutation.mutate(
+        { id },
+        {
+          onSuccess: () => {
+            // Update local state after successful deletion
+            const remaining = plans.filter((p) => p.id !== id);
+            setPlans(remaining);
+            if (activePlanId === id) {
+              setActivePlanId(remaining[0].id);
+              setFocusedRoomId(null);
+            }
+            notifySuccess("Plan deleted");
+          },
+          onError: (error) => {
+            notifyError(`Failed to delete plan: ${error.message}`);
+          },
+        }
+      );
     },
-    [plans, activePlanId]
+    [plans, activePlanId, deleteFloorPlanMutation]
   );
 
   const handleSelectPlan = useCallback((id: string) => {
