@@ -6,6 +6,9 @@ import { z } from "zod";
 import * as db from "./db";
 import { nanoid } from "nanoid";
 import { convertPdfToImage } from "./pdfToImage";
+import { sendFloorPlanEmail as sendFloorPlanEmailService } from "./emailService";
+import { floorPlans } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -137,6 +140,43 @@ export const appRouter = router({
         db.getShareByToken(input.token)
       ),
 
+    getSharedFloorPlan: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .query(async ({ input }) => {
+        const share = await db.getShareByToken(input.token);
+        if (!share) return null;
+        
+        // Get the floor plan without user verification since it's shared
+        const dbInstance = await db.getDb();
+        if (!dbInstance) return null;
+        
+        try {
+          const result = await dbInstance.select().from(floorPlans)
+            .where(eq(floorPlans.id, share.floorPlanId))
+            .limit(1);
+          
+          if (result.length === 0) return null;
+          
+          const plan = result[0];
+          const rooms = plan.roomsJson ? JSON.parse(plan.roomsJson) : [];
+          const furniture = plan.furnitureJson ? JSON.parse(plan.furnitureJson) : [];
+          
+          return {
+            id: plan.id,
+            name: plan.name,
+            totalWidth: plan.totalWidth,
+            totalHeight: plan.totalHeight,
+            rooms,
+            furniture,
+            createdAt: plan.createdAt.getTime(),
+            updatedAt: plan.updatedAt.getTime(),
+          } as any;
+        } catch (error) {
+          console.error("[tRPC] Failed to get shared floor plan:", error);
+          return null;
+        }
+      }),
+
     sendFloorPlanEmail: protectedProcedure
       .input(z.object({
         floorPlanId: z.string(),
@@ -149,11 +189,23 @@ export const appRouter = router({
           throw new Error("Floor plan not found");
         }
 
-        // For now, just return success - email sending would require email service integration
-        // In production, integrate with SendGrid, AWS SES, or similar
+        // Send email with PDF attachment
+        const { sendFloorPlanEmail: sendEmail } = await import("./emailService");
+        const rooms = floorPlan.roomsJson ? JSON.parse(floorPlan.roomsJson) : [];
+        const success = await sendEmail(
+          input.recipientEmail,
+          floorPlan.name,
+          rooms,
+          ctx.user.name || undefined
+        );
+
+        if (!success) {
+          throw new Error("Failed to send email. Please try again later.");
+        }
+
         return {
           success: true,
-          message: `Floor plan "${floorPlan.name}" will be sent to ${input.recipientEmail}`,
+          message: `Floor plan "${floorPlan.name}" sent to ${input.recipientEmail}`,
         };
       }),
 

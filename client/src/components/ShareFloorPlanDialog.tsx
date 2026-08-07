@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, Mail, Loader2 } from "lucide-react";
 import { FloorPlan } from "@/lib/floorPlanTypes";
 import { trpc } from "@/lib/trpc";
+import { notifySuccess, notifyError } from "@/lib/notifications";
 
 interface ShareFloorPlanDialogProps {
   open: boolean;

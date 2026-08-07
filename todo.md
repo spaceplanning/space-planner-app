@@ -130,3 +130,20 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Integrate share dialog into TopToolbar
 - [x] Add tests for share functionality
 - [x] Test share workflow end-to-end
+
+## Real Email Integration & Share Links (NEW)
+- [x] Fix TypeScript errors in ShareFloorPlanDialog
+- [x] Create ShareView page for public floor plan viewing
+- [x] Wire ShareView route in App.tsx
+- [x] Implement getSharedFloorPlan tRPC procedure
+- [x] Install and configure SendGrid package
+- [x] Create emailService.ts with SendGrid integration
+- [x] Update sendFloorPlanEmail procedure with real email sending
+- [x] Add SendGrid API key and sender email to environment variables
+- [x] Create comprehensive sharing tests (12 tests)
+- [x] Create sharing integration tests (14 tests)
+- [x] All 168 tests passing (including new sharing tests)
+- [x] Enforce view-only vs edit permissions in ShareView
+- [x] Test share token generation and expiration
+- [x] Test permission enforcement and unauthorized access
+- [x] Test email delivery with PDF attachments
