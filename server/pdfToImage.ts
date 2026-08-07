@@ -24,11 +24,11 @@ export async function convertPdfToImage(pdfBase64: string): Promise<string> {
       fs.writeFileSync(pdfPath, pdfBuffer);
       console.error("[convertPdfToImage] PDF input size:", pdfBuffer.length, "bytes");
 
-      // Convert first page to PNG at lower DPI to reduce file size
+      // Convert first page to PNG with optimal DPI for floor plans
       const pngPath = path.join(tmpDir, "output.png");
       try {
-        // Use 150 DPI instead of default 72 DPI to reduce image size
-        execSync(`pdftoppm -png -singlefile -f 1 -l 1 -r 150 "${pdfPath}" "${path.join(tmpDir, "output")}"`, {
+        // Use 200 DPI for better clarity of floor plan details (dimensions, room labels)
+        execSync(`pdftoppm -png -singlefile -f 1 -l 1 -r 200 "${pdfPath}" "${path.join(tmpDir, "output")}"`, {
           timeout: 30000,
         });
       } catch (e) {
@@ -43,11 +43,12 @@ export async function convertPdfToImage(pdfBase64: string): Promise<string> {
       let imageBuffer = fs.readFileSync(pngPath);
       console.error("[convertPdfToImage] PNG size after conversion:", imageBuffer.length, "bytes");
 
-      // Compress if too large - convert to JPEG with quality reduction
+      // Compress if too large - convert to JPEG with higher quality for floor plans
       if (imageBuffer.length > 2 * 1024 * 1024) {
         const jpgPath = path.join(tmpDir, "output.jpg");
         try {
-          execSync(`convert "${pngPath}" -resize 1600x1600 -strip -quality 70 "${jpgPath}"`, {
+          // Use higher quality (85) to preserve floor plan details
+          execSync(`convert "${pngPath}" -resize 2000x2000 -strip -quality 85 "${jpgPath}"`, {
             timeout: 30000,
           });
           if (fs.existsSync(jpgPath)) {

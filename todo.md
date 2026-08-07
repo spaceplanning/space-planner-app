@@ -147,3 +147,12 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Test share token generation and expiration
 - [x] Test permission enforcement and unauthorized access
 - [x] Test email delivery with PDF attachments
+
+
+## PDF Parsing Improvements (NEW)
+- [x] Investigate PDF vision analysis failure
+- [x] Improve PDF to image conversion (200 DPI for better clarity)
+- [x] Increase JPEG compression quality (85% to preserve details)
+- [x] Relax vision analysis prompt for PDF-derived images
+- [x] Remove overly strict "pixel-perfect" requirements
+- [x] All 168 tests still passing after improvements

@@ -314,29 +314,31 @@ export const appRouter = router({
         }
       }
 
-            const prompt = `You are an expert architectural floor plan analyzer with OCR and geometric tracing capabilities. Your task is to create an EXACT REPLICA of the uploaded floor plan as a complete wireframe.
+            const prompt = `You are an expert architectural floor plan analyzer. Your task is to analyze the floor plan and extract its structure as accurately as possible.
 
-**CRITICAL REQUIREMENTS - WIREFRAME FIRST:**
+NOTE: This image may be derived from a PDF conversion. If image quality is not perfect, do your best to extract the floor plan structure.
+
+**REQUIREMENTS:**
 1. TRACE THE COMPLETE PERIMETER: Identify and trace the outer boundary of the entire floor plan. This is the main wireframe polygon.
 2. TRACE ALL INTERNAL WALLS: Identify all internal walls, partitions, and divisions within the perimeter.
 3. EXTRACT ROOM BOUNDARIES: For each enclosed space (room), extract its boundary polygon based on the walls.
 4. EXTRACT DIMENSIONS: Use OCR to read all dimension labels, room names, and square footage from the plan.
 5. COORDINATE MAPPING: Convert all traced walls and boundaries to precise (x, y) coordinates in feet.
 
-**WIREFRAME GEOMETRY PRIORITY (DO THIS FIRST):**
-1. Trace the outer perimeter starting from top-left corner, going CLOCKWISE around the entire boundary
-2. Include ALL corners, angles, and indentations - no approximations or simplifications
-3. Trace each internal wall segment with precise coordinates
+**WIREFRAME GEOMETRY:**
+1. Trace the outer perimeter starting from top-left corner, going CLOCKWISE around the boundary
+2. Include corners and angles - approximate simplifications are acceptable if needed
+3. Trace each internal wall segment with coordinates
 4. Create section boundaries by connecting wall segments to form closed polygons
-5. Ensure all traced coordinates maintain exact angles and distances from the original
-6. For irregular/angled walls: trace the exact angle, not a simplified rectangle
+5. Ensure traced coordinates are reasonably accurate to the original
+6. For irregular/angled walls: trace the angle as shown
 
-**DIMENSION EXTRACTION PRIORITY (AFTER WIREFRAME):**
-1. Extract total square footage from OCR text on the plan
-2. Extract individual room dimensions shown on the plan
+**DIMENSION EXTRACTION:**
+1. Extract total square footage from OCR text on the plan if visible
+2. Extract individual room dimensions shown on the plan if visible
 3. Extract overall floor plan dimensions if shown
 4. If dimensions conflict, prioritize the total square footage as the source of truth
-5. Recalculate totalWidth/totalHeight to ensure area = totalSquareFeet
+5. Recalculate totalWidth/totalHeight to ensure area approximately equals totalSquareFeet
 
 Return ONLY valid JSON in this exact format, no other text:
 {
@@ -364,16 +366,15 @@ Return ONLY valid JSON in this exact format, no other text:
   ]
 }
 
-**EXACT REPLICA RULES - CRITICAL:**
-- WIREFRAME: Trace EVERY wall, partition, and boundary line exactly as shown. Start at top-left, go clockwise around perimeter, then trace each internal wall.
-- SECTIONS: Each enclosed space gets a boundary polygon with coordinates in clockwise order starting from top-left.
-- COORDINATE ACCURACY: All coordinates must be precise to 0.1 feet (1.2 inches) to match the original layout
-- SQUARE FOOTAGE VALIDATION: Sum of all section squareFeet MUST equal totalSquareFeet (within 2%)
-- DIMENSION MATCHING: If totalWidth × totalHeight ≠ totalSquareFeet, adjust dimensions proportionally to match sqft
-- ORIENTATION: Preserve exact orientation - do not rotate or mirror the layout
-- ROOM LABELS: Use exact room names from the plan, or infer from context (e.g., "MASTER BEDROOM" not just "BEDROOM")
-- NO SIMPLIFICATION: Do not approximate irregular shapes as rectangles. Trace the exact boundary.
-- ACCURACY IS CRITICAL: This must be a pixel-perfect replica of the uploaded floor plan`;
+**EXTRACTION GUIDELINES:**
+- WIREFRAME: Trace the outer boundary and internal walls. Start at top-left, go clockwise.
+- SECTIONS: Each enclosed space gets a boundary polygon with coordinates in clockwise order.
+- COORDINATE ACCURACY: Coordinates should be reasonably accurate to the original layout.
+- SQUARE FOOTAGE: Extract total square footage from OCR text if visible.
+- DIMENSION MATCHING: If totalWidth × totalHeight differs from totalSquareFeet, adjust dimensions to match sqft.
+- ORIENTATION: Preserve the orientation - do not rotate or mirror the layout.
+- ROOM LABELS: Use room names from the plan, or infer from context.
+- BEST EFFORT: If the image quality is degraded, extract what you can accurately determine.`;
 
       try {
         const response = await invokeLLM({
