@@ -26,6 +26,39 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * User profile table — stores user preferences and onboarding state
+ */
+export const userProfiles = mysqlTable("userProfiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // Foreign key to users table
+  displayName: varchar("displayName", { length: 255 }),
+  profilePhotoUrl: text("profilePhotoUrl"), // URL to profile photo in storage
+  bio: text("bio"), // User bio/description
+  // Preferences
+  unitSystem: mysqlEnum("unitSystem", ["feet", "meters"]).default("feet").notNull(),
+  theme: mysqlEnum("theme", ["dark", "light", "auto"]).default("dark").notNull(),
+  notificationsEnabled: int("notificationsEnabled").default(1).notNull(), // 1 = true, 0 = false
+  // Compliance & Onboarding
+  onboardingCompleted: int("onboardingCompleted").default(0).notNull(), // 1 = true, 0 = false
+  privacyPolicyAccepted: int("privacyPolicyAccepted").default(0).notNull(),
+  termsOfServiceAccepted: int("termsOfServiceAccepted").default(0).notNull(),
+  privacyPolicyAcceptedAt: timestamp("privacyPolicyAcceptedAt"),
+  termsOfServiceAcceptedAt: timestamp("termsOfServiceAcceptedAt"),
+  // Data collection preferences
+  analyticsEnabled: int("analyticsEnabled").default(1).notNull(), // 1 = true, 0 = false
+  crashReportingEnabled: int("crashReportingEnabled").default(1).notNull(),
+  marketingEmailsEnabled: int("marketingEmailsEnabled").default(0).notNull(),
+  // Platform info
+  platform: mysqlEnum("platform", ["web", "ios", "android"]).default("web"),
+  appVersion: varchar("appVersion", { length: 32 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type InsertUserProfile = typeof userProfiles.$inferInsert;
+
+/**
  * Floor plans table — stores user's floor plan layouts
  */
 export const floorPlans = mysqlTable("floorPlans", {
@@ -80,3 +113,18 @@ export const floorPlanShares = mysqlTable("floorPlanShares", {
 
 export type FloorPlanShare = typeof floorPlanShares.$inferSelect;
 export type InsertFloorPlanShare = typeof floorPlanShares.$inferInsert;
+
+/**
+ * Privacy policy and terms versions table — track which version user accepted
+ */
+export const policyVersions = mysqlTable("policyVersions", {
+  id: int("id").autoincrement().primaryKey(),
+  policyType: mysqlEnum("policyType", ["privacy", "terms"]).notNull(),
+  version: varchar("version", { length: 32 }).notNull(), // e.g., "1.0", "2.0"
+  content: text("content").notNull(), // Full policy text
+  effectiveDate: timestamp("effectiveDate").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PolicyVersion = typeof policyVersions.$inferSelect;
+export type InsertPolicyVersion = typeof policyVersions.$inferInsert;

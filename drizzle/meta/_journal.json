@@ -22,6 +22,13 @@
       "when": 1783185072692,
       "tag": "0002_conscious_lake",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786310521847,
+      "tag": "0003_nasty_swarm",
+      "breakpoints": true
     }
   ]
 }

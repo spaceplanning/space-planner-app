@@ -7,11 +7,13 @@ import * as db from "./db";
 import { nanoid } from "nanoid";
 import { convertPdfToImage } from "./pdfToImage";
 import { sendFloorPlanEmail as sendFloorPlanEmailService } from "./emailService";
+import { onboardingRouter } from "./onboardingRouter";
 import { floorPlans } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 export const appRouter = router({
   system: systemRouter,
+  onboarding: onboardingRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

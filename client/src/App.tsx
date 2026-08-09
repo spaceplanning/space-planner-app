@@ -6,12 +6,14 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import ShareView from "./pages/ShareView";
+import Onboarding from "./pages/Onboarding";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/onboarding"} component={Onboarding} />
       <Route path={"/shared/:token"} component={ShareView} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

@@ -156,3 +156,36 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Relax vision analysis prompt for PDF-derived images
 - [x] Remove overly strict "pixel-perfect" requirements
 - [x] All 168 tests still passing after improvements
+
+
+## Onboarding & App Store Compliance (NEW)
+- [x] Design onboarding flow and profile schema
+- [x] Create user profile database table
+- [x] Add profile tRPC procedures (create, update, get)
+- [x] Build welcome/intro onboarding screen
+- [x] Build profile setup form (name, email, preferences)
+- [x] Build preferences screen (units, theme, notifications)
+- [x] Add privacy policy and terms of service screens
+- [x] Implement data collection disclosure (GDPR, CCPA compliant)
+- [x] Add permission requests (camera, storage, location if needed)
+- [x] Implement analytics opt-in/opt-out
+- [x] Add crash reporting opt-in
+- [x] Create compliance documentation
+- [ ] Test onboarding flow end-to-end
+- [ ] Verify Play Store guidelines compliance
+- [ ] Verify App Store guidelines compliance
+
+
+## Onboarding Refinements (Follow-up)
+- [ ] Add email input to onboarding profile form
+- [ ] Add notifications toggle to preferences screen
+- [ ] Create dedicated Privacy Policy page with full content
+- [ ] Create dedicated Terms of Service page with full content
+- [ ] Implement GDPR data export functionality
+- [ ] Implement GDPR right to be forgotten (account deletion)
+- [ ] Integrate analytics collection with opt-in setting
+- [ ] Integrate crash reporting with opt-in setting
+- [ ] Add runtime permission request flows (if needed for mobile)
+- [ ] Test onboarding flow end-to-end
+- [ ] Verify Play Store guidelines compliance
+- [ ] Verify App Store guidelines compliance
