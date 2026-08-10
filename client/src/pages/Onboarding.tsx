@@ -11,9 +11,11 @@ export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>("welcome");
   const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
   const [unitSystem, setUnitSystem] = useState<"feet" | "meters">("feet");
   const [theme, setTheme] = useState<"dark" | "light" | "auto">("dark");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
   const [crashReportingEnabled, setCrashReportingEnabled] = useState(true);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
@@ -33,9 +35,11 @@ export default function Onboarding() {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.displayName || "");
+      setEmail(user?.email || "");
       setBio(profile.bio || "");
       setUnitSystem(profile.unitSystem as "feet" | "meters");
       setTheme(profile.theme as "dark" | "light" | "auto");
+      setNotificationsEnabled(profile.notificationsEnabled === 1);
       setAnalyticsEnabled(profile.analyticsEnabled === 1);
       setCrashReportingEnabled(profile.crashReportingEnabled === 1);
 
@@ -64,6 +68,7 @@ export default function Onboarding() {
         await updateProfileMutation.mutateAsync({
           unitSystem,
           theme,
+          notificationsEnabled,
           analyticsEnabled,
           crashReportingEnabled,
         });
@@ -175,6 +180,28 @@ export default function Onboarding() {
                 }}
               />
             </div>
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "12px", marginBottom: "8px" }}>
+                Email (Read-only)
+              </label>
+              <input
+                type="email"
+                value={email}
+                disabled
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: "var(--bp-bg-primary)",
+                  border: "1px solid var(--bp-grid-major)",
+                  borderRadius: "4px",
+                  color: "var(--bp-text-muted)",
+                  fontFamily: "'Space Mono', monospace",
+                  fontSize: "12px",
+                  boxSizing: "border-box",
+                  opacity: 0.6,
+                }}
+              />
+            </div>
             <div>
               <label style={{ display: "block", fontSize: "12px", marginBottom: "8px" }}>
                 Bio (Optional)
@@ -254,6 +281,18 @@ export default function Onboarding() {
                 <option value="light">Light</option>
                 <option value="auto">Auto</option>
               </select>
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "flex", alignItems: "center", fontSize: "12px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={notificationsEnabled}
+                  onChange={(e) => setNotificationsEnabled(e.target.checked)}
+                  style={{ marginRight: "8px" }}
+                />
+                Enable Notifications (for important updates)
+              </label>
             </div>
 
             <div style={{ marginBottom: "16px" }}>

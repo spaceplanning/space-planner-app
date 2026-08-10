@@ -177,15 +177,25 @@ These features are beyond the current scope and can be added in future versions:
 
 
 ## Onboarding Refinements (Follow-up)
-- [ ] Add email input to onboarding profile form
-- [ ] Add notifications toggle to preferences screen
-- [ ] Create dedicated Privacy Policy page with full content
-- [ ] Create dedicated Terms of Service page with full content
-- [ ] Implement GDPR data export functionality
-- [ ] Implement GDPR right to be forgotten (account deletion)
+- [x] Add email input to onboarding profile form
+- [x] Add notifications toggle to preferences screen
+- [x] Create dedicated Privacy Policy page with full content
+- [x] Create dedicated Terms of Service page with full content
+- [x] Implement GDPR data export functionality
+- [x] Implement GDPR right to be forgotten (account deletion)
 - [ ] Integrate analytics collection with opt-in setting
 - [ ] Integrate crash reporting with opt-in setting
 - [ ] Add runtime permission request flows (if needed for mobile)
 - [ ] Test onboarding flow end-to-end
 - [ ] Verify Play Store guidelines compliance
 - [ ] Verify App Store guidelines compliance
+
+
+## GDPR Implementation Refinements
+- [ ] Add deletion request persistence to database
+- [ ] Implement actual account deletion after 30-day grace period
+- [ ] Add deletion cancellation flow
+- [ ] Expand data export to include all user records (shares, etc)
+- [ ] Add tests for GDPR export and deletion flows
+- [ ] Create settings UI for data export and account deletion
+- [ ] Implement scheduled job for automatic account deletion

@@ -7,6 +7,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import ShareView from "./pages/ShareView";
 import Onboarding from "./pages/Onboarding";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -14,6 +16,8 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/onboarding"} component={Onboarding} />
+      <Route path={"/privacy"} component={PrivacyPolicy} />
+      <Route path={"/terms"} component={TermsOfService} />
       <Route path={"/shared/:token"} component={ShareView} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
