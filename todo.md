@@ -186,7 +186,7 @@ These features are beyond the current scope and can be added in future versions:
 - [ ] Integrate analytics collection with opt-in setting
 - [ ] Integrate crash reporting with opt-in setting
 - [ ] Add runtime permission request flows (if needed for mobile)
-- [ ] Test onboarding flow end-to-end
+- [x] Test onboarding flow end-to-end (10 integration tests added, 178 total tests passing)
 - [ ] Verify Play Store guidelines compliance
 - [ ] Verify App Store guidelines compliance
 
