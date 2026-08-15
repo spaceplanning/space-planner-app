@@ -13,7 +13,7 @@ export const gdprRouter = router({
   /**
    * Export all user data as JSON
    */
-  exportData: protectedProcedure.query(async ({ ctx }) => {
+  exportData: protectedProcedure.mutation(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
@@ -60,13 +60,14 @@ export const gdprRouter = router({
   /**
    * Request account deletion (30-day grace period)
    */
-  requestDeletion: protectedProcedure.query(async ({ ctx }) => {
+  requestDeletion: protectedProcedure.mutation(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
     // Calculate deletion date (30 days from now)
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 30);
+    deletionDate.setMilliseconds(0);
 
     // Update profile with deletion request
     await db
@@ -88,7 +89,7 @@ export const gdprRouter = router({
   /**
    * Cancel deletion request
    */
-  cancelDeletion: protectedProcedure.query(async ({ ctx }) => {
+  cancelDeletion: protectedProcedure.mutation(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 

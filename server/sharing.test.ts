@@ -1,7 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { vi } from "vitest";
 import * as db from "./db";
-import { sendFloorPlanEmail } from "./emailService";
 import { nanoid } from "nanoid";
+
+const sendMock = vi.hoisted(() => vi.fn().mockResolvedValue([{ statusCode: 202 }]));
+
+vi.mock("@sendgrid/mail", () => ({
+  default: {
+    setApiKey: vi.fn(),
+    send: sendMock,
+  },
+}));
+
+import { sendFloorPlanEmail } from "./emailService";
 
 describe("Sharing & Email Service", () => {
   describe("Share Token Generation", () => {
@@ -78,8 +89,8 @@ describe("Sharing & Email Service", () => {
   });
 
   describe("Email Service", () => {
-    it("should handle missing SendGrid API key gracefully", async () => {
-      // This test verifies the service handles missing credentials
+    it("should return an email delivery result without contacting SendGrid", async () => {
+      // SendGrid is mocked: unit tests must not make network requests.
       const result = await sendFloorPlanEmail(
         "test@example.com",
         "Test Floor Plan",
@@ -87,8 +98,6 @@ describe("Sharing & Email Service", () => {
         "Test User"
       );
 
-      // Should return false when API key is not configured
-      // (This is expected in test environment)
       expect(typeof result).toBe("boolean");
     });
 

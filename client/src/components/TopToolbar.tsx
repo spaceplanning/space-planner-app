@@ -23,6 +23,7 @@ import { FloorPlan, formatFeetInches, parseFeetInches, generateId } from "@/lib/
 import ExportDialog from "./ExportDialog";
 import ShareDialog from "./ShareDialog";
 import ShareFloorPlanDialog from "./ShareFloorPlanDialog";
+import AccountDataDialog from "./AccountDataDialog";
 import { notifySuccess, notifyError, notifyInfo } from "@/lib/notifications";
 
 interface Props {
@@ -84,6 +85,7 @@ export default function TopToolbar({
   const [showDimensions, setShowDimensions] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [showAccountData, setShowAccountData] = useState(false);
   const [showGridMenu, setShowGridMenu] = useState(false);
   const [editWidth, setEditWidth] = useState("");
   const [editHeight, setEditHeight] = useState("");
@@ -542,6 +544,16 @@ export default function TopToolbar({
 
         {/* Share button */}
         <button
+          className="bp-btn"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px" }}
+          onClick={() => { setShowAccountData(true); closeAllMenus(); }}
+          title="Account data and privacy controls"
+        >
+          <Settings size={12} />
+          ACCOUNT
+        </button>
+
+        <button
           style={{
             display: "flex",
             alignItems: "center",
@@ -597,6 +609,8 @@ export default function TopToolbar({
           onClose={() => setShowShare(false)}
         />
       )}
+
+      {showAccountData && <AccountDataDialog onClose={() => setShowAccountData(false)} />}
     </>
   );
 }
