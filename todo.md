@@ -185,7 +185,7 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Implement GDPR right to be forgotten (account deletion with scheduled cleanup)
 - [x] Integrate analytics collection with opt-in setting
 - [x] Integrate crash reporting with opt-in setting
-- [ ] Add runtime permission request flows (if needed for mobile)
+- [x] Add runtime permission request flows (if needed for mobile)
 - [x] Test onboarding flow end-to-end (10 integration tests added, 178 total tests passing)
 - [ ] Verify Play Store guidelines compliance
 - [ ] Verify App Store guidelines compliance
@@ -199,3 +199,17 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Add tests for GDPR export and deletion flows
 - [x] Create settings UI for data export and account deletion
 - [x] Implement scheduled job for automatic account deletion
+
+## Native Mobile Companion App
+- [x] Initialize Expo iOS and Android application
+- [x] Add native login and profile onboarding flows
+- [x] Add native Account Data & Privacy controls
+- [x] Add document-picker floor plan upload flow without broad storage permissions
+- [x] Add user-initiated camera capture with purpose text and runtime permission handling
+- [x] Add native analytics and crash-reporting consent gating
+- [x] Configure iOS privacy usage descriptions and Android permission declarations
+- [x] Create App Store Privacy Details and Play Data Safety submission checklist
+- [x] Add mobile flow tests and validate build configuration
+- [x] Add profile-completion form and persist native onboarding profile details to the secure workspace
+- [x] Synchronize native analytics and crash-reporting consent with the account-level first-party services
+- [x] Add interaction-focused tests for sign-in, setup, import, permission-denied camera capture, and privacy switches
