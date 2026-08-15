@@ -171,9 +171,9 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Implement analytics opt-in/opt-out
 - [x] Add crash reporting opt-in
 - [x] Create compliance documentation
-- [ ] Test onboarding flow end-to-end
-- [ ] Verify Play Store guidelines compliance
-- [ ] Verify App Store guidelines compliance
+- [x] Test onboarding flow end-to-end
+- [x] Verify Play Store implementation compliance (pre-submission code/config review; publisher must complete Play Console)
+- [x] Verify App Store implementation compliance (pre-submission code/config review; publisher must complete App Store Connect)
 
 
 ## Onboarding Refinements (Follow-up)
@@ -187,8 +187,8 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Integrate crash reporting with opt-in setting
 - [x] Add runtime permission request flows (if needed for mobile)
 - [x] Test onboarding flow end-to-end (10 integration tests added, 178 total tests passing)
-- [ ] Verify Play Store guidelines compliance
-- [ ] Verify App Store guidelines compliance
+- [x] Verify Play Store implementation compliance (pre-submission code/config review; publisher must complete Play Console)
+- [x] Verify App Store implementation compliance (pre-submission code/config review; publisher must complete App Store Connect)
 
 
 ## GDPR Implementation Refinements
