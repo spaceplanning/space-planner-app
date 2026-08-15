@@ -9,6 +9,7 @@ import { convertPdfToImage } from "./pdfToImage";
 import { sendFloorPlanEmail as sendFloorPlanEmailService } from "./emailService";
 import { onboardingRouter } from "./onboardingRouter";
 import { gdprRouter } from "./gdprRouter";
+import { getUserAnalytics, trackEvent } from "./analyticsService";
 import { floorPlans } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
@@ -16,6 +17,23 @@ export const appRouter = router({
   system: systemRouter,
   onboarding: onboardingRouter,
   gdpr: gdprRouter,
+  analytics: router({
+    track: protectedProcedure
+      .input(
+        z.object({
+          eventName: z
+            .string()
+            .min(1)
+            .max(255)
+            .regex(/^[a-z0-9_]+$/, "Use lowercase letters, numbers, and underscores only"),
+          eventData: z.record(z.string(), z.unknown()).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => ({
+        tracked: await trackEvent(ctx.user.id, input.eventName, input.eventData),
+      })),
+    recent: protectedProcedure.query(({ ctx }) => getUserAnalytics(ctx.user.id, 100)),
+  }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -48,23 +66,34 @@ export const appRouter = router({
         roomsJson: z.string(),
         furnitureJson: z.string(),
       }))
-      .mutation(({ ctx, input }) =>
-        db.saveFloorPlan({
-          id: input.id || nanoid(),
+      .mutation(async ({ ctx, input }) => {
+        const floorPlanId = input.id || nanoid();
+        const floorPlan = await db.saveFloorPlan({
+          id: floorPlanId,
           userId: ctx.user.id,
           name: input.name,
           totalWidth: input.totalWidth,
           totalHeight: input.totalHeight,
           roomsJson: input.roomsJson,
           furnitureJson: input.furnitureJson,
-        })
-      ),
+        });
+
+        await trackEvent(ctx.user.id, input.id ? "floor_plan_updated" : "floor_plan_created", {
+          floorPlanId,
+          roomCount: JSON.parse(input.roomsJson).length,
+          furnitureCount: JSON.parse(input.furnitureJson).length,
+        });
+
+        return floorPlan;
+      }),
 
     delete: protectedProcedure
       .input(z.object({ id: z.string() }))
-      .mutation(({ ctx, input }) =>
-        db.deleteFloorPlan(input.id, ctx.user.id)
-      ),
+      .mutation(async ({ ctx, input }) => {
+        const result = await db.deleteFloorPlan(input.id, ctx.user.id);
+        await trackEvent(ctx.user.id, "floor_plan_deleted", { floorPlanId: input.id });
+        return result;
+      }),
   }),
 
   // Custom Furniture procedures
@@ -82,23 +111,33 @@ export const appRouter = router({
         depth: z.number(),
         color: z.string().optional(),
       }))
-      .mutation(({ ctx, input }) =>
-        db.saveCustomFurniture({
-          id: input.id || nanoid(),
+      .mutation(async ({ ctx, input }) => {
+        const furnitureId = input.id || nanoid();
+        const furniture = await db.saveCustomFurniture({
+          id: furnitureId,
           userId: ctx.user.id,
           name: input.name,
           category: input.category,
           width: input.width,
           depth: input.depth,
           color: input.color || "#4a9eff",
-        })
-      ),
+        });
+
+        await trackEvent(ctx.user.id, input.id ? "custom_furniture_updated" : "custom_furniture_created", {
+          furnitureId,
+          category: input.category,
+        });
+
+        return furniture;
+      }),
 
     delete: protectedProcedure
       .input(z.object({ id: z.string() }))
-      .mutation(({ ctx, input }) =>
-        db.deleteCustomFurniture(input.id, ctx.user.id)
-      ),
+      .mutation(async ({ ctx, input }) => {
+        const result = await db.deleteCustomFurniture(input.id, ctx.user.id);
+        await trackEvent(ctx.user.id, "custom_furniture_deleted", { furnitureId: input.id });
+        return result;
+      }),
   }),
 
   // Floor Plan Sharing procedures
@@ -109,13 +148,13 @@ export const appRouter = router({
         permission: z.enum(["view", "edit"]),
         expiresInDays: z.number().optional(),
       }))
-      .mutation(({ ctx, input }) => {
+      .mutation(async ({ ctx, input }) => {
         const shareToken = nanoid(32);
         const expiresAt = input.expiresInDays
           ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
           : undefined;
         
-        return db.createShare({
+        const share = await db.createShare({
           id: nanoid(),
           floorPlanId: input.floorPlanId,
           ownerId: ctx.user.id,
@@ -124,6 +163,14 @@ export const appRouter = router({
           permission: input.permission,
           expiresAt,
         });
+
+        await trackEvent(ctx.user.id, "floor_plan_shared", {
+          floorPlanId: input.floorPlanId,
+          permission: input.permission,
+          expiresInDays: input.expiresInDays ?? null,
+        });
+
+        return share;
       }),
 
     getShares: protectedProcedure
@@ -134,9 +181,11 @@ export const appRouter = router({
 
     deleteShare: protectedProcedure
       .input(z.object({ shareId: z.string() }))
-      .mutation(({ ctx, input }) =>
-        db.deleteShare(input.shareId, ctx.user.id)
-      ),
+      .mutation(async ({ ctx, input }) => {
+        const result = await db.deleteShare(input.shareId, ctx.user.id);
+        await trackEvent(ctx.user.id, "floor_plan_share_deleted", { shareId: input.shareId });
+        return result;
+      }),
 
     getByToken: publicProcedure
       .input(z.object({ token: z.string() }))

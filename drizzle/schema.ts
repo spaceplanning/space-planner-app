@@ -51,12 +51,30 @@ export const userProfiles = mysqlTable("userProfiles", {
   // Platform info
   platform: mysqlEnum("platform", ["web", "ios", "android"]).default("web"),
   appVersion: varchar("appVersion", { length: 32 }),
+  // GDPR deletion tracking
+  deletionRequestedAt: timestamp("deletionRequestedAt"), // When user requested deletion
+  deletionScheduledFor: timestamp("deletionScheduledFor"), // When deletion will be executed (30 days later)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = typeof userProfiles.$inferInsert;
+
+/**
+ * Analytics events table — stores user analytics events when enabled
+ */
+export const analyticsEvents = mysqlTable("analyticsEvents", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: int("userId").notNull(),
+  eventName: varchar("eventName", { length: 255 }).notNull(),
+  eventData: text("eventData"), // JSON string of event properties
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type InsertAnalyticsEvent = typeof analyticsEvents.$inferInsert;
 
 /**
  * Floor plans table — stores user's floor plan layouts
@@ -128,3 +146,17 @@ export const policyVersions = mysqlTable("policyVersions", {
 
 export type PolicyVersion = typeof policyVersions.$inferSelect;
 export type InsertPolicyVersion = typeof policyVersions.$inferInsert;
+
+/**
+ * System jobs table — persists metadata for project-level scheduled work.
+ */
+export const systemJobs = mysqlTable("systemJobs", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }).unique(),
+  description: varchar("description", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SystemJob = typeof systemJobs.$inferSelect;
+export type InsertSystemJob = typeof systemJobs.$inferInsert;

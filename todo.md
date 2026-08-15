@@ -183,7 +183,7 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Create dedicated Terms of Service page with full content
 - [x] Implement GDPR data export functionality
 - [x] Implement GDPR right to be forgotten (account deletion)
-- [ ] Integrate analytics collection with opt-in setting
+- [x] Integrate analytics collection with opt-in setting
 - [ ] Integrate crash reporting with opt-in setting
 - [ ] Add runtime permission request flows (if needed for mobile)
 - [x] Test onboarding flow end-to-end (10 integration tests added, 178 total tests passing)
@@ -192,10 +192,10 @@ These features are beyond the current scope and can be added in future versions:
 
 
 ## GDPR Implementation Refinements
-- [ ] Add deletion request persistence to database
+- [x] Add deletion request persistence to database
 - [ ] Implement actual account deletion after 30-day grace period
-- [ ] Add deletion cancellation flow
-- [ ] Expand data export to include all user records (shares, etc)
+- [x] Add deletion cancellation flow
+- [x] Expand data export to include all user records (shares, etc)
 - [ ] Add tests for GDPR export and deletion flows
 - [ ] Create settings UI for data export and account deletion
 - [ ] Implement scheduled job for automatic account deletion

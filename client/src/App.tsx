@@ -9,6 +9,7 @@ import ShareView from "./pages/ShareView";
 import Onboarding from "./pages/Onboarding";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import { ConsentAnalytics } from "./components/ConsentAnalytics";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -30,6 +31,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
+          <ConsentAnalytics />
           <Toaster
             theme="dark"
             toastOptions={{

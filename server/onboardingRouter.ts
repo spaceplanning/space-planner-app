@@ -1,6 +1,7 @@
 import { protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as profileDb from "./profileDb";
+import { trackEvent } from "./analyticsService";
 
 export const onboardingRouter = router({
   /**
@@ -42,7 +43,13 @@ export const onboardingRouter = router({
       if (input.marketingEmailsEnabled !== undefined)
         updates.marketingEmailsEnabled = input.marketingEmailsEnabled ? 1 : 0;
 
-      return await profileDb.updateUserProfile(ctx.user.id, updates);
+      const profile = await profileDb.updateUserProfile(ctx.user.id, updates);
+
+      if (input.analyticsEnabled === true) {
+        await trackEvent(ctx.user.id, "analytics_consent_enabled");
+      }
+
+      return profile;
     }),
 
   /**
@@ -63,7 +70,12 @@ export const onboardingRouter = router({
    * Complete onboarding
    */
   completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
-    return await profileDb.completeOnboarding(ctx.user.id);
+    const profile = await profileDb.completeOnboarding(ctx.user.id);
+    await trackEvent(ctx.user.id, "onboarding_completed", {
+      unitSystem: profile.unitSystem,
+      theme: profile.theme,
+    });
+    return profile;
   }),
 
   /**
