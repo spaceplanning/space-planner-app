@@ -10,6 +10,7 @@ import { sendFloorPlanEmail as sendFloorPlanEmailService } from "./emailService"
 import { onboardingRouter } from "./onboardingRouter";
 import { gdprRouter } from "./gdprRouter";
 import { getUserAnalytics, trackEvent } from "./analyticsService";
+import { reportCrash } from "./crashReportingService";
 import { floorPlans } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
@@ -33,6 +34,21 @@ export const appRouter = router({
         tracked: await trackEvent(ctx.user.id, input.eventName, input.eventData),
       })),
     recent: protectedProcedure.query(({ ctx }) => getUserAnalytics(ctx.user.id, 100)),
+  }),
+  crashReports: router({
+    report: protectedProcedure
+      .input(
+        z.object({
+          message: z.string().min(1).max(2000),
+          stack: z.string().max(20000).optional(),
+          componentStack: z.string().max(10000).optional(),
+          pageUrl: z.string().max(2048).optional(),
+          userAgent: z.string().max(1024).optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => ({
+        reported: await reportCrash(ctx.user.id, input),
+      })),
   }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

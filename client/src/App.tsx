@@ -9,7 +9,9 @@ import ShareView from "./pages/ShareView";
 import Onboarding from "./pages/Onboarding";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import DeleteAccount from "./pages/DeleteAccount";
 import { ConsentAnalytics } from "./components/ConsentAnalytics";
+import { ConsentCrashReporter } from "./components/ConsentCrashReporter";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -19,6 +21,7 @@ function Router() {
       <Route path={"/onboarding"} component={Onboarding} />
       <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/terms"} component={TermsOfService} />
+      <Route path={"/delete-account"} component={DeleteAccount} />
       <Route path={"/shared/:token"} component={ShareView} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
@@ -32,6 +35,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <ConsentAnalytics />
+          <ConsentCrashReporter />
           <Toaster
             theme="dark"
             toastOptions={{

@@ -10,7 +10,15 @@ interface AccountDataDialogProps {
 export default function AccountDataDialog({ onClose }: AccountDataDialogProps) {
   const [showDeletionConfirmation, setShowDeletionConfirmation] = useState(false);
   const utils = trpc.useUtils();
+  const { data: profile } = trpc.onboarding.getProfile.useQuery();
   const { data: deletionStatus, isLoading } = trpc.gdpr.getDeletionStatus.useQuery();
+  const updateProfile = trpc.onboarding.updateProfile.useMutation({
+    onSuccess: async () => {
+      await utils.onboarding.getProfile.invalidate();
+      notifySuccess("Privacy preferences updated.");
+    },
+    onError: error => notifyError(error.message || "Unable to update privacy preferences."),
+  });
   const exportData = trpc.gdpr.exportData.useMutation({
     onSuccess: result => {
       const link = document.createElement("a");
@@ -39,7 +47,7 @@ export default function AccountDataDialog({ onClose }: AccountDataDialogProps) {
     onError: error => notifyError(error.message || "Unable to cancel account deletion."),
   });
 
-  const isBusy = exportData.isPending || requestDeletion.isPending || cancelDeletion.isPending;
+  const isBusy = exportData.isPending || requestDeletion.isPending || cancelDeletion.isPending || updateProfile.isPending;
 
   return (
     <div
@@ -79,6 +87,33 @@ export default function AccountDataDialog({ onClose }: AccountDataDialogProps) {
         <p style={{ color: "var(--bp-text-secondary)", fontSize: 12, lineHeight: 1.6, margin: "12px 0 20px" }}>
           Control your stored data. Exports include your profile, floor plans, custom furniture, shares, and opted-in analytics events.
         </p>
+
+        <div style={{ border: "1px solid var(--bp-grid-major)", padding: 14, marginBottom: 14 }}>
+          <h3 style={{ margin: "0 0 6px", fontSize: 12 }}>DIAGNOSTICS & ANALYTICS</h3>
+          <p style={{ margin: "0 0 12px", color: "var(--bp-text-muted)", fontSize: 11, lineHeight: 1.5 }}>
+            These optional controls never affect the core floor planning tools. Changes take effect immediately.
+          </p>
+          <label style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10, color: "var(--bp-text-secondary)", fontSize: 11, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={profile?.analyticsEnabled === 1}
+              disabled={isBusy || !profile}
+              onChange={event => updateProfile.mutate({ analyticsEnabled: event.target.checked })}
+              style={{ marginTop: 2 }}
+            />
+            <span><strong style={{ color: "var(--bp-text-primary)" }}>Usage analytics.</strong> Record minimal first-party activity to help improve the product.</span>
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "flex-start", color: "var(--bp-text-secondary)", fontSize: 11, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={profile?.crashReportingEnabled === 1}
+              disabled={isBusy || !profile}
+              onChange={event => updateProfile.mutate({ crashReportingEnabled: event.target.checked })}
+              style={{ marginTop: 2 }}
+            />
+            <span><strong style={{ color: "var(--bp-text-primary)" }}>Crash reporting.</strong> Send diagnostic details after an unexpected error so it can be fixed.</span>
+          </label>
+        </div>
 
         <div style={{ border: "1px solid var(--bp-grid-major)", padding: 14, marginBottom: 14 }}>
           <h3 style={{ margin: "0 0 6px", fontSize: 12 }}>EXPORT YOUR DATA</h3>

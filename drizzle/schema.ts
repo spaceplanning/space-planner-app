@@ -77,6 +77,23 @@ export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type InsertAnalyticsEvent = typeof analyticsEvents.$inferInsert;
 
 /**
+ * Crash reports table — stores diagnostic details only for users who opt in.
+ */
+export const crashReports = mysqlTable("crashReports", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: int("userId").notNull(),
+  message: text("message").notNull(),
+  stack: text("stack"),
+  componentStack: text("componentStack"),
+  pageUrl: varchar("pageUrl", { length: 2048 }),
+  userAgent: varchar("userAgent", { length: 1024 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CrashReport = typeof crashReports.$inferSelect;
+export type InsertCrashReport = typeof crashReports.$inferInsert;
+
+/**
  * Floor plans table — stores user's floor plan layouts
  */
 export const floorPlans = mysqlTable("floorPlans", {

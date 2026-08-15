@@ -92,6 +92,7 @@ describe("GDPR data export", () => {
       customFurniture: 1,
       sharedFloorPlans: 1,
       analyticsEvents: 1,
+      crashReports: 0,
     });
     expect(storagePutMock).toHaveBeenCalledTimes(1);
 
@@ -106,5 +107,6 @@ describe("GDPR data export", () => {
     expect(exported.customFurniture).toHaveLength(1);
     expect(exported.sharedFloorPlans).toHaveLength(1);
     expect(exported.analyticsEvents).toHaveLength(1);
+    expect(exported.crashReports).toHaveLength(0);
   });
 });

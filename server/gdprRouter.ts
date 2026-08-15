@@ -1,10 +1,10 @@
 import { protectedProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { users, userProfiles, floorPlans, customFurniture, floorPlanShares, analyticsEvents } from "../drizzle/schema";
+import { users, userProfiles, floorPlans, customFurniture, floorPlanShares, analyticsEvents, crashReports } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { storagePut } from "./storage";
 import { deleteUserAnalytics } from "./analyticsService";
-import { nanoid } from "nanoid";
+import { deleteUserCrashReports } from "./crashReportingService";
 
 /**
  * GDPR compliance router for data export and deletion
@@ -24,6 +24,7 @@ export const gdprRouter = router({
     const furnitureData = await db.select().from(customFurniture).where(eq(customFurniture.userId, ctx.user.id));
     const sharesData = await db.select().from(floorPlanShares).where(eq(floorPlanShares.ownerId, ctx.user.id));
     const analyticsData = await db.select().from(analyticsEvents).where(eq(analyticsEvents.userId, ctx.user.id));
+    const crashReportData = await db.select().from(crashReports).where(eq(crashReports.userId, ctx.user.id));
 
     // Compile export
     const exportData = {
@@ -34,6 +35,7 @@ export const gdprRouter = router({
       customFurniture: furnitureData,
       sharedFloorPlans: sharesData,
       analyticsEvents: analyticsData,
+      crashReports: crashReportData,
     };
 
     // Create JSON file
@@ -53,6 +55,7 @@ export const gdprRouter = router({
         customFurniture: furnitureData.length,
         sharedFloorPlans: sharesData.length,
         analyticsEvents: analyticsData.length,
+        crashReports: crashReportData.length,
       },
     };
   }),
@@ -162,6 +165,7 @@ export async function permanentlyDeleteUser(userId: number): Promise<boolean> {
 
     // Delete analytics events
     await deleteUserAnalytics(userId);
+    await deleteUserCrashReports(userId);
 
     // Delete floor plan shares
     await db.delete(floorPlanShares).where(eq(floorPlanShares.ownerId, userId));

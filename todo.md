@@ -184,7 +184,7 @@ These features are beyond the current scope and can be added in future versions:
 - [x] Implement GDPR data export functionality
 - [x] Implement GDPR right to be forgotten (account deletion with scheduled cleanup)
 - [x] Integrate analytics collection with opt-in setting
-- [ ] Integrate crash reporting with opt-in setting
+- [x] Integrate crash reporting with opt-in setting
 - [ ] Add runtime permission request flows (if needed for mobile)
 - [x] Test onboarding flow end-to-end (10 integration tests added, 178 total tests passing)
 - [ ] Verify Play Store guidelines compliance

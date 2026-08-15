@@ -21,6 +21,18 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
+  componentDidCatch(error: Error, info: { componentStack: string }) {
+    window.dispatchEvent(
+      new CustomEvent("space-planner-crash", {
+        detail: {
+          message: error.message,
+          stack: error.stack,
+          componentStack: info.componentStack,
+        },
+      })
+    );
+  }
+
   render() {
     if (this.state.hasError) {
       return (
